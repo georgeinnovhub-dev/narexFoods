@@ -1,0 +1,346 @@
+// NAREX Foods — iDe8 Flow Hub
+// Authoritative data architecture (Prisma / SQLite)
+// Money is stored as integer pesewas (GH₵1 = 100p) to avoid float errors.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ---------- Site configuration (structured, versioned) ----------
+
+model Setting {
+  key       String   @id
+  value     String // JSON-encoded
+  updatedAt DateTime @updatedAt
+}
+
+model WebsiteContent {
+  id        String   @id @default(cuid())
+  page      String @unique // home | menu | footer | seo
+  data      String // JSON payload (published version)
+  revision  Int      @default(1)
+  updatedBy String?
+  updatedAt DateTime @updatedAt
+}
+
+model ContentRevision {
+  id        String   @id @default(cuid())
+  page      String
+  data      String // JSON payload
+  revision  Int
+  updatedBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ---------- Catalogue ----------
+
+model Category {
+  id        String    @id @default(cuid())
+  name      String
+  slug      String    @unique
+  sortOrder Int       @default(0)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  products  Product[]
+}
+
+model Product {
+  id             String          @id @default(cuid())
+  name           String
+  slug           String          @unique
+  description    String          @default("")
+  categoryId     String?
+  category       Category?       @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  images         String          @default("[]") // JSON: ordered image paths
+  altText        String          @default("")
+  prepMinutes    Int             @default(20)
+  featured       Boolean         @default(false)
+  bestSeller     Boolean         @default(false)
+  available      Boolean         @default(true)
+  soldOut        Boolean         @default(false)
+  archived       Boolean         @default(false)
+  availableFrom  String? // HH:mm scheduled availability
+  availableTo    String?
+  sortOrder      Int             @default(0)
+  seoTitle       String?
+  seoDescription String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  variants       ProductVariant[]
+  addons         ProductAddOn[]
+}
+
+model ProductVariant {
+  id        String  @id @default(cuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  name      String // e.g. Small / Medium / With chicken
+  price     Int // pesewas
+  available Boolean @default(true)
+  sortOrder Int     @default(0)
+  orderItems OrderItem[]
+}
+
+model ProductAddOn {
+  id        String  @id @default(cuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  name      String
+  price     Int // pesewas
+  available Boolean @default(true)
+  sortOrder Int     @default(0)
+}
+
+// ---------- Orders (own state machine) ----------
+
+// Order status:  created -> accepted -> preparing -> ready -> collected | dispatched -> completed
+//                            \-> rejected | cancelled
+// Payment status: unpaid -> pending_verification -> paid | failed | refunded
+model Order {
+  id              String        @id @default(cuid())
+  reference       String        @unique // NAR-XXXXXX unguessable order access reference
+  idempotencyKey  String        @unique
+  status          String        @default("created") // created|accepted|rejected|preparing|ready|collected|dispatched|completed|cancelled
+  paymentStatus   String        @default("unpaid") // unpaid|pending_verification|paid|failed|refunded
+  fulfillmentType String        @default("pickup") // pickup|delivery
+  customerName    String
+  customerPhone   String
+  customerEmail   String?
+  address         String?
+  note            String?
+  subtotal        Int // pesewas, server-calculated
+  discount        Int           @default(0)
+  deliveryFee     Int           @default(0)
+  total           Int // pesewas, server-calculated
+  couponCode      String?
+  whatsappSent    Boolean       @default(false) // handoff initiated (not proof of order)
+  cancelledReason String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  items           OrderItem[]
+  events          OrderEvent[]
+  payments        Payment[]
+  assignment      DispatchAssignment?
+}
+
+model OrderItem {
+  id          String          @id @default(cuid())
+  orderId     String
+  order       Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId   String?
+  productName String // immutable snapshot
+  variantId   String?
+  variantName String // immutable snapshot
+  unitPrice   Int // pesewas snapshot
+  quantity    Int
+  addons      String          @default("[]") // JSON [{name, price}] snapshot
+  lineTotal   Int // pesewas snapshot
+  variant ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+}
+
+model OrderEvent {
+  id        String   @id @default(cuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  type      String // status_change|payment|note|whatsapp|dispatch|assignment
+  message   String
+  actor     String   @default("system")
+  createdAt DateTime @default(now())
+}
+
+// ---------- Payments (separate state machine) ----------
+
+model Payment {
+  id           String   @id @default(cuid())
+  orderId      String
+  order        Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  provider     String // manual|paystack|zenobank
+  method       String   @default("mobile_money") // mobile_money|bank_transfer|card|cash
+  status       String   @default("pending") // pending|awaiting_review|processing|paid|failed|rejected|refunded
+  amount       Int // pesewas
+  currency     String   @default("GHS")
+  reference    String   @unique // internal payment reference
+  providerRef  String? // provider transaction reference
+  evidencePath String? // protected upload path (never public)
+  evidenceName String?
+  reviewedBy   String?
+  reviewedAt   DateTime?
+  reviewNote   String?
+  meta         String   @default("{}") // JSON provider events / webhook log
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  events       PaymentEvent[]
+}
+
+model PaymentEvent {
+  id        String   @id @default(cuid())
+  paymentId String?
+  payment   Payment? @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+  type      String // init|webhook|verify|review|reconciliation
+  status    String   @default("ok")
+  detail    String?
+  createdAt DateTime @default(now())
+}
+
+// ---------- Marketing ----------
+
+model Coupon {
+  id            String   @id @default(cuid())
+  code          String   @unique
+  type          String // percent|fixed
+  value         Int // percent (0-100) or pesewas for fixed
+  minSubtotal   Int      @default(0)
+  startsAt      DateTime?
+  endsAt        DateTime?
+  maxRedemptions Int?
+  redeemedCount Int      @default(0)
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  redemptions   CouponRedemption[]
+}
+
+model CouponRedemption {
+  id       String   @id @default(cuid())
+  couponId String
+  coupon   Coupon   @relation(fields: [couponId], references: [id], onDelete: Cascade)
+  orderId  String
+  discount Int
+  createdAt DateTime @default(now())
+  @@unique([couponId, orderId])
+}
+
+model Campaign {
+  id         String   @id @default(cuid())
+  title      String
+  message    String
+  image      String?
+  ctaLabel   String?
+  ctaUrl     String?
+  placement  String   @default("popup") // popup|banner
+  status     String   @default("draft") // draft|scheduled|active|paused|expired
+  priority   Int      @default(0)
+  startsAt   DateTime?
+  endsAt     DateTime?
+  audience   String   @default("all")
+  pageTarget String   @default("all")
+  device     String   @default("all") // all|mobile|desktop
+  showOnce   Boolean  @default(true)
+  impressions Int     @default(0)
+  clicks     Int      @default(0)
+  dismissals Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+// ---------- Staff, RBAC ----------
+
+model Role {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String   @default("")
+  permissions String   @default("[]") // JSON array of permission keys
+  isSystem    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  staff       StaffMember[]
+}
+
+model StaffMember {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  name         String
+  passwordHash String? // null => invitation pending
+  roleId       String
+  role         Role      @relation(fields: [roleId], references: [id])
+  status       String    @default("pending") // pending|active|suspended
+  department   String?
+  invitedBy    String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  lastLoginAt  DateTime?
+  dispatchProfile DispatchProfile?
+}
+
+model DispatchProfile {
+  id           String      @id @default(cuid())
+  staffId      String      @unique
+  staff        StaffMember @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  phone        String      @default("")
+  vehicle      String      @default("")
+  availability String      @default("offline") // online|offline|busy
+  serviceAreas String      @default("[]")
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  assignments  DispatchAssignment[]
+}
+
+model DispatchAssignment {
+  id            String      @id @default(cuid())
+  orderId       String      @unique
+  order         Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  dispatcherId  String?
+  dispatcher    DispatchProfile? @relation(fields: [dispatcherId], references: [id], onDelete: SetNull)
+  status        String      @default("awaiting") // awaiting|assigned|accepted|collected|out_for_delivery|delivered|failed|returned
+  fee           Int         @default(0)
+  note          String?
+  failureReason String?
+  assignedBy    String?
+  assignedAt    DateTime?
+  acceptedAt    DateTime?
+  collectedAt   DateTime?
+  deliveredAt   DateTime?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+// ---------- Content ----------
+
+model BlogPost {
+  id          String    @id @default(cuid())
+  slug        String    @unique
+  title       String
+  excerpt     String    @default("")
+  content     String    @default("")
+  coverImage  String?
+  altText     String    @default("")
+  tags        String    @default("[]")
+  status      String    @default("draft") // draft|published|archived
+  author      String    @default("NAREX Foods")
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+// ---------- Platform ----------
+
+model AuditEvent {
+  id        String   @id @default(cuid())
+  actor     String
+  actorId   String?
+  action    String
+  target    String?
+  meta      String   @default("{}")
+  createdAt DateTime @default(now())
+  @@index([createdAt])
+}
+
+model NotificationOutbox {
+  id        String    @id @default(cuid())
+  type      String // new_order|order_accepted|payment_submitted|receipt_approved|receipt_rejected|dispatch_assigned|staff_invite|alert
+  subject   String
+  recipient String?
+  payload   String    @default("{}")
+  status    String    @default("pending") // pending|sent|failed
+  attempts  Int       @default(0)
+  lastError String?
+  sentAt    DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}

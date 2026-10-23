@@ -1,0 +1,808 @@
+     1→# NAREX FOODS — ELITE FULL-STACK WEB APPLICATION DEVELOPMENT MASTER PROMPT
+     2→## iDe8 Flow Hub | Production-Grade Restaurant Commerce & Operations Platform
+     3→
+     4→### 1. YOUR ROLE AND MISSION
+     5→
+     6→Act as the principal software architect, senior full-stack engineer, premium UI/UX designer, database engineer, security specialist, payment integration engineer, QA lead and technical delivery manager for iDe8 Flow Hub.
+     7→
+     8→Your assignment is to CONTINUE DEVELOPMENT of the existing NAREX Foods / NAREX Kitchen full-stack project and deliver a complete, elegant, reliable, secure, mobile-first restaurant web application.
+     9→
+    10→Existing project directory:
+    11→
+    12→`C:\Users\LENOVO\Documents\iDe8\Programming\NAREX\NAREX-Kitchen\narex-fullstack`
+    13→
+    14→Build on the existing repository. Do not replace it with a fresh template, duplicate working modules, discard existing functionality, or create a visual-only prototype.
+    15→
+    16→The objective is a complete customer ordering website connected to a functional administration and operations platform.
+    17→
+    18→The application must use:
+    19→
+    20→- Next.js and TypeScript, preserving the existing compatible project architecture.
+    21→- Tailwind CSS and a consistent premium design system.
+    22→- Supabase PostgreSQL as the authoritative source of truth.
+    23→- Supabase Auth and Row Level Security for authentication and data access.
+    24→- Supabase Storage for appropriately protected images and payment evidence.
+    25→- WhatsApp for customer order placement and business communication.
+    26→- Paystack and Zenobank through separately configurable payment adapters.
+    27→- Google Sheets and Google Apps Script for configured email automation and optional operational reporting.
+    28→- Free and open-source tools wherever practical.
+    29→
+    30→Do not claim that a feature works until its real implementation and relevant tests demonstrate that it works.
+    31→
+    32→### 2. BUSINESS IDENTITY AND BRAND DIRECTION
+    33→
+    34→Brand: NAREX Foods  
+    35→Tagline: Good Food. Great Taste. Made with Care.  
+    36→Location: Mampong-Akuapem, Ghana  
+    37→Business contact: 0559291195  
+    38→Currency: Ghana cedi (GH₵)
+    39→
+    40→Create an elegant Ghanaian food brand with a contemporary restaurant-commerce identity.
+    41→
+    42→Use refined cream and warm ivory surfaces, deep forest green or olive accents, restrained gold details, rich food photography, elegant typography, spacious layouts and subtle shadows. Treat these as initial design tokens that authorized administrators can adjust.
+    43→
+    44→The visual identity should communicate quality, warmth, reliability, convenience and care.
+    45→
+    46→Do not use a generic dashboard template as the final design. Create a cohesive experience across the storefront, customer account, staff portal, dispatch interface and administration dashboard.
+    47→
+    48→Keep the company's developer attribution and ownership information in the appropriate administrative, documentation or legal locations. Do not expose private developer contact details or insert unnecessary technical branding into the customer experience.
+    49→
+    50→Apply the restaurant's family-appropriate product and event policy internally to product management, promotional content and publishing workflows without turning it into unnecessary customer-facing slogans.
+    51→
+    52→### 3. INITIAL FOOD MENU
+    53→
+    54→Configure the following menu using database-backed products and variants.
+    55→
+    56→**Product 1: Yam / Plantain / Rice with Palava Sauce**
+    57→- Small: GH₵20
+    58→- Medium: GH₵25
+    59→- Large: GH₵30
+    60→
+    61→**Product 2: Yam / Plantain / Rice with Vegetable Stew**
+    62→- Small: GH₵20
+    63→- Medium: GH₵25
+    64→- Large: GH₵30
+    65→
+    66→**Product 3: Jollof Rice**
+    67→- With egg: GH₵25
+    68→- With chicken: GH₵35
+    69→
+    70→**Product 4: Rice Balls with Groundnut Soup**
+    71→- GH₵30
+    72→
+    73→Use the exact supplied prices. Do not silently change the currency, price or variant.
+    74→
+    75→Allow authorized users to add, edit, reorder, schedule, publish, archive and temporarily disable menu items.
+    76→
+    77→Products must support:
+    78→- Product name, slug, description and category.
+    79→- Multiple images, thumbnails and image ordering.
+    80→- Portion sizes and variant-specific prices.
+    81→- Optional configurable extras and add-ons.
+    82→- Availability, sold-out state and scheduled availability.
+    83→- Preparation estimates where provided.
+    84→- Featured status and promotional eligibility.
+    85→- Dietary and allergen information only when verified.
+    86→- Search, filtering, sorting and category navigation.
+    87→- SEO metadata and accessible image descriptions.
+    88→
+    89→Ensure all prices and product availability are recalculated and validated on the server during checkout.
+    90→
+    91→### 4. COMPLETE CUSTOMER STOREFRONT
+    92→
+    93→Build the following public-facing pages and customer journeys.
+    94→
+    95→#### Homepage
+    96→- Premium animated hero section.
+    97→- Multiple hero slides with smooth transitions.
+    98→- Featured dishes and best sellers.
+    99→- Popular categories and menu highlights.
+   100→- Promotional banners and coupon campaigns.
+   101→- Restaurant introduction and configurable service information.
+   102→- Customer testimonials only when genuine and authorized.
+   103→- Blog highlights.
+   104→- Contact and WhatsApp actions.
+   105→- Configurable opening hours and service availability.
+   106→- Responsive footer and social links.
+   107→
+   108→#### Menu page
+   109→- Searchable, filterable menu.
+   110→- Category tabs and product cards.
+   111→- Variant and price display.
+   112→- Product availability indicators.
+   113→- Quick-add actions where a variant is unambiguous.
+   114→- Product details and image gallery.
+   115→- Responsive layouts and accessible interactions.
+   116→
+   117→#### Product detail pages
+   118→- Product image gallery.
+   119→- Automatic image rotation when multiple approved images are available.
+   120→- Manual image selection, touch swiping and accessible previous/next controls.
+   121→- Variant and quantity selectors.
+   122→- Configurable add-ons.
+   123→- Availability and price updates.
+   124→- Related products.
+   125→- Clear add-to-cart feedback.
+   126→
+   127→#### Cart
+   128→- Persistent cart state across page navigation and refresh.
+   129→- Quantity changes and item removal.
+   130→- Variant-aware line items.
+   131→- Coupon entry and validation.
+   132→- Subtotal, discount, configured fees and total.
+   133→- Stock/availability revalidation.
+   134→- Clear empty-cart and failure states.
+   135→
+   136→#### Customer account
+   137→- Registration and login where enabled.
+   138→- Secure password recovery.
+   139→- Profile management.
+   140→- Saved delivery details with appropriate protections.
+   141→- Order history and order status.
+   142→- Payment records and receipt-review status.
+   143→- Customer notifications and privacy controls.
+   144→
+   145→Permit guest checkout if supported by the existing architecture, while using secure, unguessable order access references and appropriate authorization. Do not expose orders by predictable IDs alone.
+   146→
+   147→### 5. PREMIUM ANIMATIONS AND UI/UX
+   148→
+   149→Implement tasteful, high-quality interactions:
+   150→
+   151→- Smooth page and section transitions.
+   152→- Product card hover effects.
+   153→- Image crossfades and carousel transitions.
+   154→- Animated cart feedback.
+   155→- Skeleton loading states.
+   156→- Smooth mobile navigation and drawers.
+   157→- Subtle scroll-triggered reveals.
+   158→- Animated statistics when the underlying data is available.
+   159→- Clear success, warning and error states.
+   160→- Accessible modal and confirmation interactions.
+   161→
+   162→Requirements:
+   163→- Respect `prefers-reduced-motion`.
+   164→- Avoid excessive animation, large layout shifts and long blocking transitions.
+   165→- Do not auto-advance carousels in a way that makes content inaccessible.
+   166→- Pause or provide controls for automatic image rotation.
+   167→- Support keyboard navigation, focus visibility, semantic HTML and screen readers.
+   168→- Optimize images and avoid unnecessary client-side JavaScript.
+   169→- Ensure the website remains usable on low-end mobile devices and slower networks.
+   170→
+   171→Do not make animations a substitute for real functionality.
+   172→
+   173→### 6. WHATSAPP ORDERING AND CHECKOUT
+   174→
+   175→The default business WhatsApp number is 0559291195.
+   176→
+   177→Implement the Ghanaian international WhatsApp link correctly, using the configured business number and URL-encoded message content.
+   178→
+   179→The order flow must:
+   180→
+   181→1. Collect the customer's name and contact information as required.
+   182→2. Collect the order type, such as pickup or configured delivery.
+   183→3. Collect a delivery address or pickup details where applicable.
+   184→4. Validate the requested products, variants and quantities.
+   185→5. Recalculate all prices and discounts on the server.
+   186→6. Create a durable order in Supabase with a unique reference.
+   187→7. Store immutable order-item snapshots of product names, variants, quantities and unit prices.
+   188→8. Display the complete order summary.
+   189→9. Offer WhatsApp order placement with a prepared message containing the reference and order summary.
+   190→10. Provide a return path to the website and order status page.
+   191→11. Preserve the order even if the customer closes WhatsApp or fails to send the message.
+   192→12. Allow authorized staff to accept, reject or update the order status.
+   193→
+   194→Use an idempotency mechanism to prevent duplicate orders from repeated submissions or retries.
+   195→
+   196→Clearly distinguish:
+   197→- Order created.
+   198→- WhatsApp handoff initiated.
+   199→- Order accepted by staff.
+   200→- Payment received and verified.
+   201→- Order prepared.
+   202→- Order collected or dispatched.
+   203→- Order completed or cancelled.
+   204→
+   205→Opening WhatsApp is not proof that a message was sent, an order was accepted or payment was made.
+   206→
+   207→Provide a configurable contact number and ordering availability setting. When ordering is paused, explain the situation and offer the configured contact route.
+   208→
+   209→### 7. PAYMENT INTEGRATIONS
+   210→
+   211→Create a provider-neutral payment architecture with independent activation controls.
+   212→
+   213→#### Paystack
+   214→- Inspect and preserve existing Paystack routes where appropriate.
+   215→- Initialize payment on the server using the validated order amount.
+   216→- Store the provider reference and transaction state.
+   217→- Verify transactions server-side using the official API.
+   218→- Verify webhook signatures according to current provider documentation.
+   219→- Prevent replay attacks and duplicate event processing.
+   220→- Match verified transaction amount, currency and order reference.
+   221→- Record provider events and reconciliation status.
+   222→- Never mark payment successful merely because a browser reaches a success page.
+   223→
+   224→#### Zenobank
+   225→- Investigate the actual merchant integration documentation when supplied.
+   226→- Verify API endpoints, authentication, transaction initiation, verification, webhook support and settlement behavior.
+   227→- Implement only against documented capabilities.
+   228→- Keep the integration disabled until the required credentials and configuration are validated.
+   229→- Never invent API endpoints, signing schemes or capabilities.
+   230→
+   231→#### Manual payment
+   232→Support authorized configuration of:
+   233→- Recipient or account name.
+   234→- Bank, mobile-money provider or supported transfer method.
+   235→- Account or merchant details.
+   236→- Payment instructions.
+   237→- Supported currency.
+   238→- Required evidence and verification procedure.
+   239→
+   240→Customer workflow:
+   241→1. Select manual payment.
+   242→2. View the correct recipient details.
+   243→3. Submit the order.
+   244→4. Upload payment evidence through a protected upload flow.
+   245→5. Receive a submission reference and review status.
+   246→6. Receive a notification after the evidence is reviewed.
+   247→
+   248→Staff workflow:
+   249→- Open pending receipt submissions.
+   250→- Inspect evidence through authorized, time-limited access.
+   251→- Compare the submitted evidence with the order amount and recipient.
+   252→- Approve or reject with a recorded reason.
+   253→- Record reviewer identity and timestamp.
+   254→- Escalate suspicious or inconsistent submissions.
+   255→
+   256→Receipt uploads must never automatically mark an order paid.
+   257→
+   258→#### Payment administration
+   259→Superadmin must be able to:
+   260→- Enable or disable each provider independently.
+   261→- Configure safe, non-secret payment settings.
+   262→- View connection and configuration readiness.
+   263→- Configure manual payment instructions.
+   264→- View payment attempts and reconciliation exceptions.
+   265→- Review transaction history and refunds where supported.
+   266→- Control payment review permissions.
+   267→- Access a complete financial audit trail.
+   268→
+   269→Secrets must be provided through protected server-side environment variables or a secure credential-management mechanism. Do not display full secrets after saving them.
+   270→
+   271→Use an explicit payment state machine and prevent unauthorized state transitions. Never expose provider secret keys to client-side code or logs.
+   272→
+   273→### 8. STAFF ENROLLMENT AND ROLE-BASED ACCESS CONTROL
+   274→
+   275→Implement staff enrollment and administration.
+   276→
+   277→Features:
+   278→- Invitation and enrollment.
+   279→- Pending approval and activation.
+   280→- Secure authentication and recovery.
+   281→- Account suspension and deactivation.
+   282→- Custom role creation and editing.
+   283→- Granular permissions.
+   284→- Department or operational assignment where useful.
+   285→- Access review and audit history.
+   286→
+   287→Suggested roles:
+   288→- Superadmin.
+   289→- Operations manager.
+   290→- Order manager.
+   291→- Cashier/payment reviewer.
+   292→- Kitchen/order preparation staff.
+   293→- Dispatch manager.
+   294→- Dispatcher.
+   295→- Content editor.
+   296→- Marketing manager.
+   297→- Analyst.
+   298→- Customer support.
+   299→
+   300→Superadmin must be able to assign permissions for:
+   301→- Menu and product editing.
+   302→- Order management.
+   303→- Payment evidence review.
+   304→- Payment configuration.
+   305→- Dispatch management.
+   306→- Staff enrollment and role assignment.
+   307→- Website editing and publishing.
+   308→- Campaigns and coupons.
+   309→- Blog management.
+   310→- Analytics and exports.
+   311→- System settings and audit logs.
+   312→
+   313→Enforce authorization on every protected server action and API. Hiding navigation items is not sufficient.
+   314→
+   315→Prevent self-promotion, unauthorized role escalation and unapproved access to financial or customer information.
+   316→
+   317→Require confirmation or additional approval for sensitive operations when configured. Log role changes, permission changes, staff activation, deactivation and privileged operations.
+   318→
+   319→### 9. DISPATCH ENROLLMENT AND DELIVERY MANAGEMENT
+   320→
+   321→Build a dedicated dispatch portal and dispatch administration module.
+   322→
+   323→Features:
+   324→- Dispatcher invitation and enrollment.
+   325→- Approval, activation, suspension and deactivation.
+   326→- Dispatch-specific roles and permissions.
+   327→- Service area configuration.
+   328→- Delivery fee and eligibility configuration.
+   329→- Dispatcher availability.
+   330→- Assignment queues.
+   331→- Manual assignment and reassignment.
+   332→- Assignment acceptance.
+   333→- Order collection and delivery status.
+   334→- Customer communication.
+   335→- Delay and failed-delivery reasons.
+   336→- Completion records and optional proof of delivery.
+   337→- Dispatcher performance and workload reporting.
+   338→
+   339→Suggested delivery states:
+   340→- Awaiting assignment.
+   341→- Assigned.
+   342→- Accepted.
+   343→- Ready for collection.
+   344→- Collected.
+   345→- Out for delivery.
+   346→- Delivered.
+   347→- Failed delivery.
+   348→- Returned or cancelled, where applicable.
+   349→
+   350→Do not assume the business offers nationwide delivery. Configure service areas and availability explicitly.
+   351→
+   352→Dispatchers must see only the information necessary for their assigned work. They must not automatically receive payment configuration, unrestricted customer records or administrative access.
+   353→
+   354→### 10. SUPERADMIN DASHBOARD
+   355→
+   356→Build a premium, responsive management dashboard with a consistent sidebar, header, page navigation, filters, action menus and mobile-friendly layouts.
+   357→
+   358→Suggested modules:
+   359→
+   360→**Overview**
+   361→- Total orders.
+   362→- New and pending orders.
+   363→- Paid order totals.
+   364→- Outstanding payment amounts.
+   365→- Revenue metrics with explicit definitions.
+   366→- Average order value.
+   367→- Best-selling items.
+   368→- Order status distribution.
+   369→- Sales trends.
+   370→- Operational alerts.
+   371→
+   372→**Orders**
+   373→- Search, filters and pagination.
+   374→- Order details and customer instructions.
+   375→- Status updates.
+   376→- Payment status and order status kept separate.
+   377→- Assignment and dispatch information.
+   378→- Order notes and history.
+   379→- Cancellation and exception handling.
+   380→- Printable order summaries.
+   381→
+   382→**Menu and products**
+   383→- Product CRUD.
+   384→- Variants and prices.
+   385→- Image management.
+   386→- Categories.
+   387→- Availability scheduling.
+   388→- Promotions and featured products.
+   389→
+   390→**Payments**
+   391→- Provider status.
+   392→- Payment attempts.
+   393→- Manual transfer settings.
+   394→- Receipt review.
+   395→- Reconciliation exceptions.
+   396→- Refund records where supported.
+   397→- Transaction and audit history.
+   398→
+   399→**Staff and roles**
+   400→- Enrollment and approval.
+   401→- Custom roles.
+   402→- Permission assignment.
+   403→- Account status.
+   404→- Access audit history.
+   405→
+   406→**Dispatch**
+   407→- Dispatcher enrollment.
+   408→- Workload and assignments.
+   409→- Service areas.
+   410→- Delivery fees.
+   411→- Delivery performance.
+   412→
+   413→**Marketing**
+   414→- Popups.
+   415→- Coupons.
+   416→- Promotions.
+   417→- Campaign scheduling.
+   418→- Redemption analytics.
+   419→
+   420→**Content**
+   421→- Website editor.
+   422→- Hero slides.
+   423→- Blog.
+   424→- Navigation and footer.
+   425→- Announcements.
+   426→- SEO settings.
+   427→
+   428→**Reports**
+   429→- Sales reports.
+   430→- Orders by date and status.
+   431→- Payment reconciliation.
+   432→- Product performance.
+   433→- Customer trends.
+   434→- Dispatch performance.
+   435→- Staff activity.
+   436→- CSV export and print layouts.
+   437→
+   438→**System**
+   439→- General settings.
+   440→- Integration readiness.
+   441→- Email automation.
+   442→- Audit logs.
+   443→- Feature activation.
+   444→- Maintenance and service status.
+   445→- Backup and recovery documentation.
+   446→
+   447→### 11. ADVANCED ANALYTICS AND REPORTING
+   448→
+   449→All dashboard metrics must be calculated from real persisted records.
+   450→
+   451→Implement date-range filters, comparisons, searchable tables and suitable charts.
+   452→
+   453→Include:
+   454→- Orders by day, week, month and selected period.
+   455→- Sales by product and variant.
+   456→- Paid versus unpaid orders.
+   457→- Gross order value and net collected amounts.
+   458→- Discounts, refunds and payment exceptions.
+   459→- Average order value.
+   460→- Repeat-customer metrics when reliable.
+   461→- Product availability and demand.
+   462→- Peak ordering periods.
+   463→- Order acceptance and preparation times.
+   464→- Dispatch completion and failure rates.
+   465→- Coupon and campaign conversion.
+   466→- Receipt review workload.
+   467→- Notification failures.
+   468→- Staff activity and sensitive administrative changes.
+   469→
+   470→Document metric definitions. Exclude unpaid orders from collected revenue, handle refunds correctly and avoid counting duplicated payment events.
+   471→
+   472→Use database-side aggregation, suitable indexes and pagination rather than loading the entire database into the browser.
+   473→
+   474→CSV exports must respect permissions and data minimization. Printable reports should have clear titles, date ranges, currency and generated timestamps.
+   475→
+   476→### 12. PROMOTIONAL POPUPS, COUPONS AND CAMPAIGNS
+   477→
+   478→Create a campaign manager supporting multiple independent campaigns.
+   479→
+   480→Campaign types:
+   481→- Welcome coupon.
+   482→- Special food offer.
+   483→- New menu announcement.
+   484→- Seasonal promotion.
+   485→- Restaurant notice.
+   486→- Service update.
+   487→- Approved upcoming event.
+   488→- Limited-time offer.
+   489→
+   490→Each campaign should support:
+   491→- Title and message.
+   492→- Optional image.
+   493→- CTA label and destination.
+   494→- Start/end date.
+   495→- Draft, scheduled, active, paused and expired status.
+   496→- Display priority.
+   497→- Audience and page targeting.
+   498→- Desktop/mobile presentation.
+   499→- Dismissal and frequency limits.
+   500→- Preview and publication workflow.
+   501→- Impressions, clicks, dismissals and redemptions.
+   502→
+   503→Avoid repeatedly showing the same popup or obstructing checkout.
+   504→
+   505→Coupon support:
+   506→- Percentage or fixed discount.
+   507→- Minimum order amount.
+   508→- Eligible products/categories.
+   509→- Start/end time.
+   510→- Maximum total redemptions.
+   511→- Per-customer redemption limits where identity is available.
+   512→- Active/inactive status.
+   513→- Server-side validation and redemption recording.
+   514→
+   515→Prevent duplicate coupon redemption and discount manipulation with appropriate transactional controls.
+   516→
+   517→Campaigns and public content must comply with the restaurant's configured product and event policy.
+   518→
+   519→### 13. FULLY EDITABLE WEBSITE UI/UX
+   520→
+   521→Create a website content editor accessible to superadmin and specifically authorized staff.
+   522→
+   523→Authorized editors should be able to manage:
+   524→- Headings, descriptions and paragraph content.
+   525→- CTA labels and destinations.
+   526→- Hero images and carousel slides.
+   527→- Product and category presentation.
+   528→- Banners and announcements.
+   529→- Theme colors and approved typography presets.
+   530→- Backgrounds and gradient overlays.
+   531→- Header and footer content.
+   532→- Navigation links.
+   533→- Contact details.
+   534→- Opening hours.
+   535→- Promotional sections.
+   536→- Popup content.
+   537→- Blog content and metadata.
+   538→- SEO titles, descriptions and social preview images.
+   539→
+   540→Provide:
+   541→- Draft and published versions.
+   542→- Live preview.
+   543→- Revision history.
+   544→- Change attribution.
+   545→- Publication confirmation.
+   546→- Rollback to previous versions.
+   547→- Validation and safe default values.
+   548→- Permission-controlled editing and publishing.
+   549→
+   550→Do not permit arbitrary executable JavaScript, unrestricted CSS injection or unsafe HTML editing.
+   551→
+   552→Use structured configuration and approved design tokens. Validate image sources, links and layout settings. Keep all editable content in Supabase or another explicitly documented authoritative storage mechanism.
+   553→
+   554→The public site must remain functional if a configurable value is missing or invalid.
+   555→
+   556→### 14. BLOG AND CONTENT PUBLISHING
+   557→
+   558→Implement:
+   559→- Blog listing.
+   560→- Article details.
+   561→- Categories and tags.
+   562→- Search and pagination.
+   563→- Featured posts.
+   564→- Draft, scheduled, published and archived states.
+   565→- Structured content editing.
+   566→- Featured images and alt text.
+   567→- Author and publication date.
+   568→- SEO metadata and canonical URLs.
+   569→- Related articles.
+   570→- Preview and revision history.
+   571→- Content review and publishing permissions.
+   572→- Sitemap inclusion for published articles.
+   573→
+   574→Create useful restaurant-related editorial content only when approved. Do not invent testimonials, food certifications, awards or factual claims.
+   575→
+   576→### 15. SUPABASE DATA ARCHITECTURE
+   577→
+   578→Inspect the existing database before adding tables.
+   579→
+   580→Create or safely extend structures for:
+   581→- Profiles and customer accounts.
+   582→- Staff memberships.
+   583→- Roles and permissions.
+   584→- Products and categories.
+   585→- Product variants and media.
+   586→- Orders and order-item snapshots.
+   587→- Payment attempts and transactions.
+   588→- Payment evidence and review history.
+   589→- Payment provider settings.
+   590→- Dispatch profiles and assignments.
+   591→- Coupons and redemptions.
+   592→- Campaigns and engagement events.
+   593→- Website settings and revisions.
+   594→- Blog posts, categories and revisions.
+   595→- Notification outbox and delivery attempts.
+   596→- Audit events.
+   597→
+   598→Use appropriate foreign keys, unique constraints, check constraints, indexes, timestamps and transactional operations.
+   599→
+   600→Maintain separate order and payment state machines.
+   601→
+   602→Use migrations under version control. Avoid destructive schema changes without a verified backup and migration plan.
+   603→
+   604→Implement Row Level Security policies for customer ownership, staff permissions, dispatch assignment and privileged administration.
+   605→
+   606→Protect private storage buckets. Validate uploaded file types and sizes, use safe generated filenames and provide short-lived access links when needed.
+   607→
+   608→Never expose the Supabase service-role key in browser code.
+   609→
+   610→### 16. GOOGLE APPS SCRIPT AND AUTOMATED EMAIL
+   611→
+   612→Use Google Apps Script as an email automation bridge, with Google Sheets used only for appropriate operational reporting or logging.
+   613→
+   614→Potential email events:
+   615→- New order.
+   616→- Order acceptance or cancellation.
+   617→- Payment evidence submitted.
+   618→- Receipt approval or rejection.
+   619→- Dispatch assignment and completion.
+   620→- Staff invitation and enrollment decision.
+   621→- Important operational alerts.
+   622→
+   623→Use an outbox or equivalent reliable queue so temporary email failures do not block ordering.
+   624→
+   625→Implement:
+   626→- Authenticated requests.
+   627→- Idempotency.
+   628→- Retry with bounded backoff.
+   629→- Delivery attempt records.
+   630→- Failure reporting.
+   631→- Configurable recipients and templates.
+   632→- Integration health checks.
+   633→- Test-send functionality.
+   634→- Secret rotation instructions.
+   635→
+   636→Minimize the personal information sent to Google Sheets. Never expose credentials or private integration tokens in public sheets, frontend code or logs.
+   637→
+   638→Do not claim an email was delivered solely because a request was accepted.
+   639→
+   640→### 17. SECURITY AND PRODUCTION READINESS
+   641→
+   642→Implement:
+   643→- Secure authentication and session handling.
+   644→- Server-side role and permission checks.
+   645→- Supabase RLS.
+   646→- Input validation and output encoding.
+   647→- Rate limiting for sensitive endpoints.
+   648→- CSRF protection where applicable.
+   649→- Secure webhook verification.
+   650→- Payment idempotency.
+   651→- Protected file uploads.
+   652→- Safe error handling.
+   653→- Security headers and suitable content security policy.
+   654→- Secret redaction.
+   655→- Audit logging.
+   656→- Data export permissions.
+   657→- Backup and recovery procedures.
+   658→
+   659→Prevent:
+   660→- Unauthorized order access.
+   661→- Staff privilege escalation.
+   662→- Forged payment success.
+   663→- Duplicate payments and duplicate order processing.
+   664→- Coupon abuse.
+   665→- Arbitrary file uploads.
+   666→- Cross-customer data access.
+   667→- Sensitive information leaking through logs or analytics.
+   668→- Public access to manual payment evidence.
+   669→- Unrestricted mutation of payment status.
+   670→
+   671→Use current official provider documentation for payment integrations and avoid unverified assumptions.
+   672→
+   673→### 18. PERFORMANCE, ACCESSIBILITY AND SEO
+   674→
+   675→Optimize:
+   676→- Image sizes and loading.
+   677→- Server rendering and caching where safe.
+   678→- Database queries and indexes.
+   679→- Route loading states.
+   680→- Mobile performance.
+   681→- Pagination and filtering.
+   682→- Bundle size.
+   683→- Font loading and layout stability.
+   684→
+   685→Provide:
+   686→- Responsive layouts.
+   687→- Semantic landmarks.
+   688→- Accessible forms and labels.
+   689→- Keyboard-operable menus and dialogs.
+   690→- Clear focus states.
+   691→- Reduced-motion support.
+   692→- Accessible validation messages.
+   693→- Appropriate contrast.
+   694→- Metadata and social sharing previews.
+   695→- Canonical URLs.
+   696→- Sitemap and robots configuration.
+   697→- Product and article structured data where accurate.
+   698→
+   699→Do not cache private customer data or dynamic payment/order information publicly.
+   700→
+   701→### 19. IMPLEMENTATION WORKFLOW
+   702→
+   703→Follow this execution order, adapting it to the actual repository.
+   704→
+   705→**Phase 1: Audit**
+   706→- Inspect Git status and repository structure.
+   707→- Read package scripts and dependencies.
+   708→- Inspect existing pages, routes, authentication and database schema.
+   709→- Identify unfinished or broken features.
+   710→- Check environment variable names without printing secret values.
+   711→- Establish a baseline test and production build.
+   712→- Back up relevant data before risky changes.
+   713→
+   714→**Phase 2: Design system and storefront**
+   715→- Create consistent design tokens and shared components.
+   716→- Complete the homepage and menu.
+   717→- Implement product galleries, carousels and responsive interactions.
+   718→- Complete cart, checkout and WhatsApp ordering.
+   719→
+   720→**Phase 3: Database and access**
+   721→- Complete safe Supabase migrations.
+   722→- Implement role-based permissions and RLS.
+   723→- Verify customer, staff and dispatcher access boundaries.
+   724→
+   725→**Phase 4: Payments**
+   726→- Complete and test Paystack.
+   727→- Implement manual transfers and receipt review.
+   728→- Integrate Zenobank against verified documentation.
+   729→- Implement reconciliation and payment audit records.
+   730→
+   731→**Phase 5: Operations**
+   732→- Complete orders, staff enrollment and dispatch management.
+   733→- Add role-controlled dashboard modules.
+   734→- Implement operational workflows and reports.
+   735→
+   736→**Phase 6: Marketing and content**
+   737→- Complete coupons, campaigns, popups and scheduling.
+   738→- Build the editable website manager.
+   739→- Complete blog and publishing workflows.
+   740→
+   741→**Phase 7: Integrations**
+   742→- Configure Apps Script email automation.
+   743→- Add retry handling, monitoring and integration health checks.
+   744→
+   745→**Phase 8: QA and deployment**
+   746→- Run lint, type checking, unit tests, integration tests and production build.
+   747→- Test critical journeys end to end.
+   748→- Review security and access control.
+   749→- Validate migrations and backup recovery.
+   750→- Document deployment and rollback.
+   751→
+   752→After each phase, report what changed, what passed, what failed and what remains. Continue implementing rather than stopping at a list of recommendations.
+   753→
+   754→### 20. REQUIRED TEST SCENARIOS
+   755→
+   756→Verify at minimum:
+   757→
+   758→1. A customer can browse the menu and select a variant.
+   759→2. A product price change is reflected in server-side checkout validation.
+   760→3. A customer can create an order and open the prepared WhatsApp message.
+   761→4. Repeated checkout submissions do not create unintended duplicate orders.
+   762→5. A customer cannot access another customer's private order information.
+   763→6. An unauthorized staff member cannot open restricted payment or settings operations.
+   764→7. A customer can upload payment evidence securely.
+   765→8. An uploaded receipt does not automatically mark payment as successful.
+   766→9. An authorized reviewer can approve or reject evidence with an audit record.
+   767→10. Paystack transactions are verified server-side.
+   768→11. Invalid or duplicated payment webhooks do not duplicate financial events.
+   769→12. Zenobank remains unavailable for customer use until valid integration configuration exists.
+   770→13. Dispatchers cannot access unassigned customer orders beyond their authorized scope.
+   771→14. Coupon limits and expiry rules are enforced on the server.
+   772→15. Campaign scheduling and popup frequency rules behave correctly.
+   773→16. Website edits can be previewed, published and rolled back by authorized users.
+   774→17. Email failures do not lose orders.
+   775→18. Analytics match underlying database records.
+   776→19. CSV exports respect the current user's permissions.
+   777→20. The production build completes without unresolved critical errors.
+   778→
+   779→### 21. DEFINITION OF DONE
+   780→
+   781→A feature is complete only when it is implemented, persisted, authorized, validated, usable and tested.
+   782→
+   783→Deliver:
+   784→- Actual code changes.
+   785→- Database migrations.
+   786→- Seed data for the supplied menu where appropriate.
+   787→- Updated `.env.example` containing variable names and safe placeholders only.
+   788→- Automated tests and actual execution results.
+   789→- Setup instructions for Supabase.
+   790→- Paystack configuration and webhook instructions.
+   791→- Zenobank integration requirements.
+   792→- Apps Script deployment instructions.
+   793→- Staff and dispatch administration guide.
+   794→- Backup and rollback documentation.
+   795→- Deployment instructions.
+   796→- A clear list of outstanding external dependencies and limitations.
+   797→
+   798→Never report successful deployment, payment verification, email delivery or production readiness without evidence.
+   799→
+   800→### FINAL EXECUTION INSTRUCTION
+   801→
+   802→Begin immediately by auditing the existing NAREX Kitchen repository.
+   803→
+   804→Preserve working code and data. Build the actual premium customer-facing web application and connect it to the real full-stack backend. Continue through the administrative, payment, staff, dispatch, marketing and reporting modules in a controlled implementation sequence.
+   805→
+   806→Do not stop after generating a proposed folder structure, a homepage mock-up or a development plan. Implement the code, run the tests, fix failures and document what has genuinely been completed.
+   807→
+   808→Deliver an elegant, secure, maintainable, fully integrated NAREX Foods platform under iDe8 Flow Hub engineering standards.
