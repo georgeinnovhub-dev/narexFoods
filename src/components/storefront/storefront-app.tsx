@@ -9,12 +9,16 @@ import { SiteHeader } from "./header";
 import { SiteFooter } from "./footer";
 import { HomeView } from "./home-view";
 import { MenuView } from "./menu-view";
+import { ServicesView } from "./services-view";
+import { ParlaysView } from "./parlays-view";
+import { EatntourView } from "./eatntour-view";
 import { CheckoutView } from "./checkout-view";
 import { SuccessView } from "./success-view";
 import { TrackView } from "./track-view";
 import { CartSheet } from "./cart-sheet";
 import { ProductModal } from "./product-modal";
 import { CampaignPopup } from "./campaign-popup";
+import { EatntourPromo } from "./eatntour-promo";
 
 export function StorefrontApp() {
   const view = useAppStore((s) => s.view);
@@ -24,7 +28,13 @@ export function StorefrontApp() {
   if (view === "admin") return null;
 
   function renderBody() {
-    const needsBootstrap = view === "home" || view === "menu" || view === "checkout";
+    const needsBootstrap =
+      view === "home" ||
+      view === "menu" ||
+      view === "checkout" ||
+      view === "services" ||
+      view === "parlays" ||
+      view === "eatntour";
     if (needsBootstrap && loading && !bootstrap) return <BootstrapSkeleton />;
     if (needsBootstrap && !bootstrap) {
       return (
@@ -48,6 +58,12 @@ export function StorefrontApp() {
         return <HomeView />;
       case "menu":
         return <MenuView />;
+      case "services":
+        return <ServicesView />;
+      case "parlays":
+        return <ParlaysView />;
+      case "eatntour":
+        return <EatntourView />;
       case "checkout":
         return <CheckoutView />;
       case "success":
@@ -75,6 +91,7 @@ export function StorefrontApp() {
       <CartSheet />
       <ProductModal />
       <CampaignPopup />
+      <EatntourPromo />
     </div>
   );
 }

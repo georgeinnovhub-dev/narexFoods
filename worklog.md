@@ -188,3 +188,28 @@ Work Log:
 
 Stage Summary:
 - ALL DONE. Platform is browser-verified and production-shaped. Seeded admin: admin@narexfoods.com / NarexAdmin2024!
+
+---
+Task ID: 8
+Agent: Z.ai Code (main)
+Task: Hydration fix + superadmin auth hardening + absolute dashboard + checkout pinned map + food varieties + auto carousels + Services/Parlays/Eat&Tour pages + Eat&Tour popup + exact links + PWA webapp
+
+Work Log:
+- HYDRATION FIX (reported console error: Sheet aria-controls radix-_R_* mismatch): root cause = zustand persist rehydrated cart synchronously at module init → header cart badge rendered on client but not server → Radix useId tree shifted. Fix: `skipHydration: true` in app-store persist + `useAppStore.persist.rehydrate()` in an effect inside app-shell (post-paint). Browser-verified: seeded persisted cart + reload → zero hydration errors, badge appears with animation.
+- AUTH HARDENING (superadmin dashboard menus/tabs): (1) admin-app gate now distinguishes definitive 401 (clears stale staff → login) from network/5xx errors (retry screen, session preserved) — previously ANY error logged the user out visually; (2) useAdminApi get/send/mutate intercept 401 globally → clears store staff + "Your session has expired" toast → shell returns to LoginScreen instead of broken menus/tabs full of 401 toasts (browser-verified via cookie clear); (3) "Refresh dashboard" → window.location.reload() (real session re-verification); login re-verified working.
+- ABSOLUTE DASHBOARD + DEEP LINKS: new src/lib/hash.ts (parseHash/buildHash). All views reachable as /#/view?params (e.g. /#/admin/orders, /#/menu?category=x, /#/track?reference=y). navigate() pushStates the hash; app-shell bootstraps from hash on load + hashchange listener for back/forward (browser-verified). Admin module state moved into app store (adminModule) so /#/admin/<module> syncs both ways; AdminProvider reads store.
+- CHECKOUT PINNED MAP: new storefront/delivery-map.tsx — OpenStreetMap embed iframe (no API key) with marker at kitchen pin (Mampong-Akuapem), debounced Nominatim geocode moves pin to typed address (countrycodes=gh), status captions (idle/locating/found/approx), pulsing gold pin overlay, service-area badges, "Open in Google Maps" link. Gracefully offline-safe (falls back to kitchen pin + advice caption) — verified live in sandbox (nominatim unreachable → approx caption shown).
+- FOOD VARIETIES SINGLED OUT + ALL AS ONE: home new "Food varieties" section — one image card per category (hero dish photo, live dish count, sample dish, exact link navigate('menu',{category:id})) + "All varieties in one menu" CTA; menu page adds variety spotlight strip (per-category photo tiles + "Everything, as one" tile) above search/tabs.
+- AUTO SMOOTH CAROUSELS + MODAL TRANSITIONS: product-card now crossfade-auto-rotates images (3.4s, pauses on hover/focus, reduced-motion aware, photo-count pill + dots); product-modal gallery direction-aware slide+crossfade (state-based direction, no refs in render), details column entrance animation.
+- NEW PAGES: services-view (catering/corporate/meal-plans/parlays cards with exact CTAs: prefilled WhatsApp briefs + exact category deep links), parlays-view (3 curated packs, live "from" prices, exact product chips opening real modals), eatntour-view (4 tasting stops each linking to the EXACT menu dish modal, 3 priced tour packages with WhatsApp booking briefs, know-before-you-go). 3 AI hero images generated (eatntour/services/parlays).
+- EAT & TOUR POPUP AD: eatntour-promo.tsx — once-per-session (sessionStorage), 7s delay, CTA → navigate('eatntour'); campaign-popup CTA now also supports internal "#/..." URLs for exact links.
+- EXACT LINKS EVERYWHERE: hero-carousel CTA resolver supports "product:<id>" (opens exact dish modal), "category:<id>" (exact variety), "#/view" deep links; featured/varieties/parlays/eatntour all link to exact targets; only generic buttons go to general menu.
+- COPYWRITING: upgraded featured section, CTA band, menu intro copy; full marketing copy on 3 new pages.
+- PWA WEBAPP: public/manifest.webmanifest (standalone, shortcuts to Menu/Track/Eat&Tour), narex-icon.svg + narex-maskable.svg, public/sw.js (NETWORK-FIRST for everything incl. /_next/static — cache-first on Turbopack's path-hashed dev chunks served stale code; API + cross-origin bypassed), layout metadata (manifest, appleWebApp, icons). SW verified registering (v2 activated). NOTE: old v1 SW + Cache API must be unregistered once per browser (done in test sessions).
+- Fix: eatntour stop labels truncate cleanly (shortDishName, no dangling "Yam /").
+- Verification: agent-browser E2E — hydration regression test clean, home/varieties/menu deep-link filter/product modal (variant+addon total)/cart/checkout map/one-tap delivery order NAR-FYG335RV → success; services/parlays/eatntour render; admin login, all 10 menus, payments tabs, orders data, 401 expiry → friendly toast + login; back/forward hash routing; mobile (iPhone 15) nav sheet + layout; footer 0-gap sticky/push; tsc 0 src errors; eslint 0 problems; dev.log clean.
+
+Stage Summary:
+- All reported issues fixed and requested features shipped. Entry points unchanged (single / route, AppShell). New views: services, parlays, eatntour (store View union + NAV + footer links).
+- GOTCHA for future agents: public/sw.js is network-first BY DESIGN (Turbopack dev chunks are path-hashed; never introduce cache-first for /_next/*). Bump CACHE name when changing sw.js. Old-session caches: unregister SW + caches.delete (test sessions already cleaned).
+- Seeded admin unchanged: admin@narexfoods.com / NarexAdmin2024!

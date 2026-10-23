@@ -34,6 +34,7 @@ export function ProductModal() {
   const [addonIds, setAddonIds] = useState<string[]>([]);
   const [qty, setQty] = useState(1);
   const [imgIndex, setImgIndex] = useState(0);
+  const [slideDirection, setSlideDirection] = useState<1 | -1>(1);
   const [galleryPaused, setGalleryPaused] = useState(false);
   const [lastProductId, setLastProductId] = useState<string | null>(null);
   const touchStartX = useRef<number | null>(null);
@@ -48,13 +49,27 @@ export function ProductModal() {
     setAddonIds([]);
     setQty(1);
     setImgIndex(0);
+    setSlideDirection(1);
     setGalleryPaused(false);
+  }
+
+  function goToImage(next: number, direction: 1 | -1) {
+    setSlideDirection(direction);
+    setImgIndex(((next % images.length) + images.length) % images.length);
+  }
+
+  function stepImage(delta: 1 | -1) {
+    if (images.length < 2) return;
+    goToImage(imgIndex + delta, delta);
   }
 
   /* Gallery auto-rotation (4s), pausable, respects reduced motion */
   useEffect(() => {
     if (images.length < 2 || galleryPaused || reduced) return;
-    const timer = setInterval(() => setImgIndex((i) => (i + 1) % images.length), GALLERY_INTERVAL_MS);
+    const timer = setInterval(() => {
+      setSlideDirection(1);
+      setImgIndex((i) => (i + 1) % images.length);
+    }, GALLERY_INTERVAL_MS);
     return () => clearInterval(timer);
   }, [images.length, galleryPaused, reduced]);
 
@@ -88,7 +103,7 @@ export function ProductModal() {
     const delta = endX - touchStartX.current;
     touchStartX.current = null;
     if (Math.abs(delta) < 40) return;
-    setImgIndex((i) => (delta < 0 ? (i + 1) % images.length : (i - 1 + images.length) % images.length));
+    stepImage(delta < 0 ? 1 : -1);
   }
 
   const open = Boolean(product);
@@ -105,13 +120,14 @@ export function ProductModal() {
                 onTouchStart={onTouchStart}
                 onTouchEnd={onTouchEnd}
               >
-                <AnimatePresence mode="sync">
+                <AnimatePresence mode="sync" initial={false} custom={slideDirection}>
                   <motion.div
                     key={imgIndex}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: reduced ? 0 : 0.5 }}
+                    custom={slideDirection}
+                    initial={{ opacity: 0, x: reduced ? 0 : 44 * slideDirection, scale: reduced ? 1 : 1.02 }}
+                    animate={{ opacity: 1, x: 0, scale: 1 }}
+                    exit={{ opacity: 0, x: reduced ? 0 : -44 * slideDirection }}
+                    transition={{ duration: reduced ? 0 : 0.45, ease: [0.21, 0.47, 0.32, 0.98] }}
                     className="absolute inset-0"
                   >
                     <SafeImage
@@ -128,7 +144,7 @@ export function ProductModal() {
                     <button
                       type="button"
                       aria-label="Previous image"
-                      onClick={() => setImgIndex((i) => (i - 1 + images.length) % images.length)}
+                      onClick={() => stepImage(-1)}
                       className="absolute left-2 top-1/2 flex size-10 -translate-y-1/2 items-center justify-center rounded-full bg-forest/40 text-cream backdrop-blur-sm transition-colors hover:bg-forest/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold"
                     >
                       <ChevronLeft className="size-5" aria-hidden="true" />
@@ -136,7 +152,7 @@ export function ProductModal() {
                     <button
                       type="button"
                       aria-label="Next image"
-                      onClick={() => setImgIndex((i) => (i + 1) % images.length)}
+                      onClick={() => stepImage(1)}
                       className="absolute right-2 top-1/2 flex size-10 -translate-y-1/2 items-center justify-center rounded-full bg-forest/40 text-cream backdrop-blur-sm transition-colors hover:bg-forest/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold"
                     >
                       <ChevronRight className="size-5" aria-hidden="true" />
@@ -156,7 +172,7 @@ export function ProductModal() {
                           type="button"
                           aria-label={`Go to image ${i + 1}`}
                           aria-current={i === imgIndex}
-                          onClick={() => setImgIndex(i)}
+                          onClick={() => goToImage(i, i > imgIndex ? 1 : -1)}
                           className={cn(
                             "h-1.5 rounded-full transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold",
                             i === imgIndex ? "w-5 bg-cream" : "w-1.5 bg-cream/50 hover:bg-cream/80"
@@ -170,7 +186,13 @@ export function ProductModal() {
             </div>
 
             {/* Details */}
-            <div className="flex flex-col gap-5 p-5 sm:p-6">
+            <motion.div
+              key={`details-${product.id}`}
+              initial={reduced ? false : { opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: reduced ? 0 : 0.4, ease: "easeOut", delay: reduced ? 0 : 0.08 }}
+              className="flex flex-col gap-5 p-5 sm:p-6"
+            >
               <div>
                 <div className="flex flex-wrap items-center gap-2">
                   {product.categoryName && (
@@ -300,7 +322,7 @@ export function ProductModal() {
                   )}
                 </Button>
               </div>
-            </div>
+            </motion.div>
           </div>
         )}
       </DialogContent>

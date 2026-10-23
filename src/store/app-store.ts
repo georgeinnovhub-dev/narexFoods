@@ -3,8 +3,21 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import type { BootstrapResponse, OrderDTO } from "@/lib/types";
+import { buildHash, type HashView } from "@/lib/hash";
 
-export type View = "home" | "menu" | "checkout" | "success" | "track" | "admin";
+export type View = HashView;
+
+export type AdminModule =
+  | "overview"
+  | "orders"
+  | "menu"
+  | "payments"
+  | "staff"
+  | "dispatch"
+  | "marketing"
+  | "content"
+  | "reports"
+  | "system";
 
 export interface CartItem {
   productId: string;
@@ -22,10 +35,14 @@ export interface StaffSession {
 }
 
 interface AppState {
-  // View routing (single-page app)
+  // View routing (single-page webapp with /#/ deep links)
   view: View;
   params: Record<string, string>;
   navigate: (view: View, params?: Record<string, string>) => void;
+
+  // Admin module routing (synced to /#/admin/<module>)
+  adminModule: AdminModule;
+  setAdminModule: (m: AdminModule) => void;
 
   // Cart (variant-aware, persisted)
   cart: CartItem[];
@@ -53,6 +70,13 @@ interface AppState {
   setStaff: (s: StaffSession | null) => void;
 }
 
+/**
+ * skipHydration is critical: the cart is persisted to localStorage, so the
+ * client must NOT rehydrate during the first render — otherwise a persisted
+ * cart badge shifts the DOM and breaks React 19 SSR hydration (Radix
+ * aria-controls mismatch). We call `useAppStore.persist.rehydrate()` in an
+ * effect after mount instead.
+ */
 export const useAppStore = create<AppState>()(
   persist(
     (set, get) => ({
@@ -60,7 +84,21 @@ export const useAppStore = create<AppState>()(
       params: {},
       navigate: (view, params = {}) => {
         set({ view, params });
-        if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
+        if (typeof window !== "undefined") {
+          window.history.pushState(null, "", buildHash(view, params));
+          window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
+        }
+      },
+
+      adminModule: "overview",
+      setAdminModule: (m) => {
+        set({ adminModule: m });
+        if (typeof window !== "undefined" && useAppStore.getState().view === "admin") {
+          const target = `#/admin/${m}`;
+          if (window.location.hash !== target) {
+            window.history.pushState(null, "", target);
+          }
+        }
       },
 
       cart: [],
@@ -104,6 +142,7 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: "narex-cart",
+      skipHydration: true,
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({ cart: state.cart }) as unknown as AppState,
     }

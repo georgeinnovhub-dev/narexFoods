@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useAppStore } from "@/store/app-store";
+import { parseHash } from "@/lib/hash";
 import { apiSend } from "@/lib/client";
 import { SafeImage } from "./storefront-lib";
 import type { CampaignDTO } from "@/lib/types";
@@ -75,6 +76,10 @@ export function CampaignPopup() {
     const url = active.ctaUrl;
     if (url && /^https?:\/\//i.test(url)) {
       window.open(url, "_blank", "noopener,noreferrer");
+    } else if (url && url.startsWith("#/")) {
+      /* Internal deep link — e.g. "#/eatntour" or "#/menu?category=x" */
+      const parsed = parseHash(url);
+      navigate(parsed.view ?? "menu", parsed.params);
     } else {
       navigate("menu");
     }

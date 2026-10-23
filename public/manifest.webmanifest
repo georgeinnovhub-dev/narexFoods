@@ -1,0 +1,49 @@
+{
+  "id": "/",
+  "name": "NAREX Foods — Good Food. Great Taste. Made with Care.",
+  "short_name": "NAREX Foods",
+  "description": "Order authentic Ghanaian meals from NAREX Foods in Mampong-Akuapem — pickup or delivery, ordered in minutes. Plus catering, parlays packs and Eat & Tour experiences.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#FAF6EC",
+  "theme_color": "#17362B",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": ["food", "shopping", "lifestyle"],
+  "icons": [
+    {
+      "src": "/narex-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/narex-maskable.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Full Menu",
+      "short_name": "Menu",
+      "url": "/#/menu",
+      "icons": [{ "src": "/narex-icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+    },
+    {
+      "name": "Track Order",
+      "short_name": "Track",
+      "url": "/#/track",
+      "icons": [{ "src": "/narex-icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+    },
+    {
+      "name": "Eat & Tour",
+      "short_name": "Eat & Tour",
+      "url": "/#/eatntour",
+      "icons": [{ "src": "/narex-icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+    }
+  ]
+}

@@ -38,10 +38,12 @@ export function SiteFooter({ className }: { className?: string }) {
 
   const hoursList = DAY_ORDER.map((day) => ({ day, value: hours[day] })).filter((h) => Boolean(h.value));
 
-  const quickLinks: { label: string; view: "home" | "menu" | "checkout" | "track" }[] = [
+  const quickLinks: { label: string; view: "home" | "menu" | "services" | "parlays" | "eatntour" | "track" }[] = [
     { label: "Home", view: "home" },
     { label: "Full Menu", view: "menu" },
-    { label: "Checkout", view: "checkout" },
+    { label: "Services", view: "services" },
+    { label: "Parlays & Hangouts", view: "parlays" },
+    { label: "Eat & Tour", view: "eatntour" },
     { label: "Track Order", view: "track" },
   ];
 
@@ -150,7 +152,7 @@ export function SiteFooter({ className }: { className?: string }) {
       <div className="border-t border-cream/15">
         <div className="mx-auto flex w-full max-w-6xl flex-col items-center justify-between gap-2 px-4 py-5 text-xs text-cream/70 sm:flex-row">
           <p>
-            © {new Date().getFullYear()} {brand.name}. All rights reserved.
+            © <span suppressHydrationWarning>{new Date().getFullYear()}</span> {brand.name}. All rights reserved.
           </p>
           <p className="opacity-70">{brand.developerCredit || FALLBACK.credit}</p>
         </div>

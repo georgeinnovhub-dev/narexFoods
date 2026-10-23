@@ -29,6 +29,7 @@ import { useAppStore } from "@/store/app-store";
 import { useBootstrapData } from "@/hooks/use-bootstrap";
 import { apiSend, formatGHS } from "@/lib/client";
 import { apiErrorBody, apiErrorStatus, cartUnitPrice } from "./storefront-lib";
+import { DeliveryMapCard } from "./delivery-map";
 import type { CheckoutPayload, CreateOrderResponse, CouponValidateResponse } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -101,6 +102,7 @@ export function CheckoutView() {
   });
 
   const fulfillment = watch("fulfillmentType");
+  const addressValue = watch("address") ?? "";
   const deliveryEnabled = settings?.delivery.enabled ?? false;
 
   const lines = useMemo(
@@ -374,7 +376,7 @@ export function CheckoutView() {
                 </RadioGroup>
 
                 {fulfillment === "delivery" && deliveryEnabled && (
-                  <div className="space-y-3 rounded-2xl border border-dashed border-border bg-muted/40 p-4">
+                  <div className="space-y-4 rounded-2xl border border-dashed border-border bg-muted/40 p-4">
                     <div className="space-y-1.5">
                       <Label htmlFor="co-address">
                         Delivery address <span className="text-destructive">*</span>
@@ -391,20 +393,8 @@ export function CheckoutView() {
                         <p className="text-xs font-medium text-destructive">{errors.address.message}</p>
                       )}
                     </div>
-                    {(settings?.delivery.areas.length ?? 0) > 0 && (
-                      <div className="space-y-1.5">
-                        <p className="text-xs font-medium text-muted-foreground">We deliver to:</p>
-                        <ul className="flex flex-wrap gap-1.5">
-                          {settings?.delivery.areas.map((area) => (
-                            <li key={area}>
-                              <Badge variant="outline" className="rounded-full border-forest/30 text-forest">
-                                {area}
-                              </Badge>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
+                    {/* Pinned preview map — follows the typed address */}
+                    <DeliveryMapCard address={addressValue} areas={settings?.delivery.areas ?? []} />
                   </div>
                 )}
 

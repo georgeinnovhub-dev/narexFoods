@@ -5,17 +5,19 @@ import { AnimatePresence, motion } from "framer-motion";
 import { ChevronLeft, ChevronRight, Pause, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAppStore, type View } from "@/store/app-store";
+import { parseHash } from "@/lib/hash";
 import { SafeImage, usePrefersReducedMotion, type HeroSlide } from "./storefront-lib";
 import { cn } from "@/lib/utils";
 
 const AUTO_ADVANCE_MS = 6000;
 
 function isKnownView(action: string): action is View {
-  return action === "home" || action === "menu" || action === "checkout" || action === "success" || action === "track";
+  return ["home", "menu", "checkout", "success", "track", "services", "parlays", "eatntour"].includes(action);
 }
 
 export function HeroCarousel({ slides }: { slides: HeroSlide[] }) {
   const navigate = useAppStore((s) => s.navigate);
+  const openProduct = useAppStore((s) => s.openProduct);
   const reduced = usePrefersReducedMotion();
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -36,7 +38,29 @@ export function HeroCarousel({ slides }: { slides: HeroSlide[] }) {
     return () => clearInterval(timer);
   }, [reduced, paused, count]);
 
+  /**
+   * Exact-link CTA resolution:
+   * - "product:<id>"  → opens the details modal for that exact dish
+   * - "category:<id>" → opens the menu filtered to that exact variety
+   * - "#/view?params" → any internal deep link (e.g. #/eatntour)
+   * - otherwise       → a known view name, or the menu as a safe default
+   */
   function handleCta(action: string) {
+    if (action.startsWith("product:")) {
+      openProduct(action.slice("product:".length));
+      return;
+    }
+    if (action.startsWith("category:")) {
+      navigate("menu", { category: action.slice("category:".length) });
+      return;
+    }
+    if (action.startsWith("#/")) {
+      const parsed = parseHash(action);
+      if (parsed.view) {
+        navigate(parsed.view, parsed.params);
+        return;
+      }
+    }
     navigate(isKnownView(action) ? action : "menu");
   }
 

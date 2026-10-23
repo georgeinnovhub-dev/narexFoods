@@ -12,6 +12,17 @@ import { cn } from "@/lib/utils";
 const NAV_LINKS: { view: View; label: string }[] = [
   { view: "home", label: "Home" },
   { view: "menu", label: "Menu" },
+  { view: "services", label: "Services" },
+  { view: "eatntour", label: "Eat & Tour" },
+  { view: "track", label: "Track Order" },
+];
+
+const MOBILE_LINKS: { view: View; label: string }[] = [
+  { view: "home", label: "Home" },
+  { view: "menu", label: "Full Menu" },
+  { view: "services", label: "Services" },
+  { view: "parlays", label: "Parlays & Hangouts" },
+  { view: "eatntour", label: "Eat & Tour" },
   { view: "track", label: "Track Order" },
 ];
 
@@ -56,7 +67,7 @@ export function SiteHeader() {
         </button>
 
         {/* Desktop nav */}
-        <nav aria-label="Primary" className="hidden items-center gap-1 md:flex">
+        <nav aria-label="Primary" className="hidden items-center gap-0.5 lg:flex">
           {NAV_LINKS.map((link) => (
             <button
               key={link.view}
@@ -64,7 +75,7 @@ export function SiteHeader() {
               onClick={() => go(link.view)}
               aria-current={view === link.view ? "page" : undefined}
               className={cn(
-                "rounded-full px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                "rounded-full px-3.5 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                 view === link.view
                   ? "bg-forest text-cream"
                   : "text-foreground/80 hover:bg-forest/10 hover:text-forest"
@@ -81,7 +92,7 @@ export function SiteHeader() {
             variant="ghost"
             size="sm"
             onClick={() => navigate("admin")}
-            className="hidden h-10 gap-1.5 px-3 text-forest hover:bg-forest/10 hover:text-forest md:inline-flex"
+            className="hidden h-10 gap-1.5 px-3 text-forest hover:bg-forest/10 hover:text-forest lg:inline-flex"
           >
             <LogIn className="size-4" aria-hidden="true" />
             Staff Portal
@@ -119,7 +130,7 @@ export function SiteHeader() {
               <Button
                 variant="outline"
                 size="icon"
-                className="size-11 rounded-full border-forest/30 text-forest hover:bg-forest hover:text-cream md:hidden"
+                className="size-11 rounded-full border-forest/30 text-forest hover:bg-forest hover:text-cream lg:hidden"
                 aria-label="Open navigation menu"
               >
                 <MenuIcon className="size-5" aria-hidden="true" />
@@ -130,7 +141,7 @@ export function SiteHeader() {
                 <SheetTitle className="font-display text-forest">Menu</SheetTitle>
               </SheetHeader>
               <nav aria-label="Mobile" className="mt-2 flex flex-col gap-1 px-4">
-                {NAV_LINKS.map((link) => (
+                {MOBILE_LINKS.map((link) => (
                   <button
                     key={link.view}
                     type="button"

@@ -1,19 +1,35 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { Clock, Flame, Plus, Star } from "lucide-react";
+import { useEffect, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { Clock, Flame, Images, Plus, Star } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAppStore } from "@/store/app-store";
 import { formatGHS } from "@/lib/client";
-import { lowestVariantPrice, productAlt, SafeImage } from "./storefront-lib";
+import { cn } from "@/lib/utils";
+import { lowestVariantPrice, productAlt, SafeImage, usePrefersReducedMotion } from "./storefront-lib";
 import type { ProductDTO } from "@/lib/types";
+
+const CARD_SLIDE_MS = 3400;
 
 export function ProductCard({ product }: { product: ProductDTO }) {
   const openProduct = useAppStore((s) => s.openProduct);
   const addToCart = useAppStore((s) => s.addToCart);
   const setCartOpen = useAppStore((s) => s.setCartOpen);
+  const reduced = usePrefersReducedMotion();
+
+  const images = product.images;
+  const [imgIndex, setImgIndex] = useState(0);
+  const [carouselPaused, setCarouselPaused] = useState(false);
+
+  /* Auto smooth carousel — crossfades through the dish's photos, pauses on hover/focus. */
+  useEffect(() => {
+    if (images.length < 2 || carouselPaused || reduced) return;
+    const timer = setInterval(() => setImgIndex((i) => (i + 1) % images.length), CARD_SLIDE_MS);
+    return () => clearInterval(timer);
+  }, [images.length, carouselPaused, reduced]);
 
   const soldOut = product.soldOut || !product.available;
   const fromPrice = lowestVariantPrice(product);
@@ -33,6 +49,10 @@ export function ProductCard({ product }: { product: ProductDTO }) {
     <motion.article
       whileHover={{ y: -4 }}
       transition={{ type: "spring", stiffness: 300, damping: 24 }}
+      onMouseEnter={() => setCarouselPaused(true)}
+      onMouseLeave={() => setCarouselPaused(false)}
+      onFocusCapture={() => setCarouselPaused(true)}
+      onBlurCapture={() => setCarouselPaused(false)}
       className="group relative flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-shadow duration-300 hover:shadow-md focus-within:shadow-md"
     >
       {/* Image */}
@@ -43,12 +63,25 @@ export function ProductCard({ product }: { product: ProductDTO }) {
         aria-label={`View details for ${product.name}`}
         aria-disabled={soldOut}
       >
-        <SafeImage
-          src={product.images[0] || undefined}
-          alt={productAlt(product)}
-          className="h-full w-full transition-transform duration-500 group-hover:scale-[1.03]"
-          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-        />
+        <AnimatePresence mode="sync" initial={false}>
+          <motion.div
+            key={imgIndex}
+            initial={{ opacity: 0, scale: 1.04 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: reduced ? 0 : 0.9, ease: "easeOut" }}
+            className="absolute inset-0"
+          >
+            <SafeImage
+              src={images[imgIndex] || undefined}
+              alt={images.length > 1 ? `${productAlt(product)} — photo ${imgIndex + 1} of ${images.length}` : productAlt(product)}
+              className="h-full w-full"
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+              priority={imgIndex === 0}
+            />
+          </motion.div>
+        </AnimatePresence>
+
         {/* Badges */}
         <div className="absolute left-3 top-3 flex flex-wrap gap-1.5">
           {product.featured && !soldOut && (
@@ -64,6 +97,31 @@ export function ProductCard({ product }: { product: ProductDTO }) {
             </Badge>
           )}
         </div>
+
+        {/* Carousel dots + photo count */}
+        {images.length > 1 && (
+          <div className="absolute bottom-3 right-3 flex items-center gap-1.5">
+            {imgIndex === 0 && images.length > 1 && (
+              <span className="flex items-center gap-1 rounded-full bg-forest/50 px-2 py-0.5 text-[10px] font-medium text-cream backdrop-blur-sm" aria-hidden="true">
+                <Images className="size-3" />
+                {images.length}
+              </span>
+            )}
+            <span className="flex items-center gap-1">
+              {images.map((src, i) => (
+                <span
+                  key={src + i}
+                  aria-hidden="true"
+                  className={cn(
+                    "h-1.5 rounded-full transition-all duration-300",
+                    i === imgIndex ? "w-4 bg-cream" : "w-1.5 bg-cream/50"
+                  )}
+                />
+              ))}
+            </span>
+          </div>
+        )}
+
         {soldOut && (
           <div className="absolute inset-0 flex items-center justify-center bg-forest/60 backdrop-blur-[2px]">
             <span className="rounded-full border border-cream/40 bg-forest/70 px-4 py-1.5 font-display text-sm font-semibold uppercase tracking-widest text-cream">

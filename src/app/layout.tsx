@@ -31,7 +31,20 @@ export const metadata: Metadata = {
     "palava sauce", "food delivery Ghana", "restaurant Akuapem",
   ],
   authors: [{ name: "NAREX Foods" }],
-  icons: { icon: "/narex-logo.svg" },
+  manifest: "/manifest.webmanifest",
+  applicationName: "NAREX Foods",
+  icons: {
+    icon: [
+      { url: "/narex-logo.svg", type: "image/svg+xml" },
+      { url: "/narex-icon.svg", type: "image/svg+xml" },
+    ],
+    apple: "/narex-logo.svg",
+  },
+  appleWebApp: {
+    capable: true,
+    title: "NAREX Foods",
+    statusBarStyle: "black-translucent",
+  },
   openGraph: {
     title: "NAREX Foods — Good Food. Great Taste. Made with Care.",
     description:

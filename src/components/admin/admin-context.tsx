@@ -1,46 +1,45 @@
 "use client";
 
-/** Lightweight admin context: active module routing + permission helpers + toast-bound API. */
+/**
+ * Admin context: permission helpers + toast-bound API with automatic
+ * session-expiry handling (any 401 returns the user to the login screen
+ * instead of leaving broken menus/tabs behind).
+ */
 
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useMemo, type ReactNode } from "react";
 import { toast } from "sonner";
 import { apiGet, apiSend } from "@/lib/client";
+import { useAppStore, type AdminModule } from "@/store/app-store";
 import { errMessage } from "@/components/admin/admin-utils";
 
-export type AdminModule =
-  | "overview"
-  | "orders"
-  | "menu"
-  | "payments"
-  | "staff"
-  | "dispatch"
-  | "marketing"
-  | "content"
-  | "reports"
-  | "system";
+export type { AdminModule };
 
 interface AdminContextValue {
-  module: AdminModule;
+  activeModule: AdminModule;
   setModule: (m: AdminModule) => void;
   can: (permission: string) => boolean;
 }
 
 const AdminContext = createContext<AdminContextValue | null>(null);
 
+/** True when an error carries an HTTP 401 status (expired/invalid session). */
+function isUnauthorized(err: unknown): boolean {
+  return err instanceof Error && (err as { status?: unknown }).status === 401;
+}
+
 export function AdminProvider({
   children,
   permissions,
-  initialModule = "overview",
 }: {
   children: ReactNode;
   permissions: string[];
-  initialModule?: AdminModule;
 }) {
-  const [module, setModule] = useState<AdminModule>(initialModule);
-
+  /* Module lives in the app store so /#/admin/<module> deep links stay in sync. */
+  const activeModule = useAppStore((s) => s.adminModule);
+  const setModule = useAppStore((s) => s.setAdminModule);
   const can = useCallback((permission: string) => permissions.includes(permission), [permissions]);
 
-  const value = useMemo(() => ({ module, setModule, can }), [module, can]);
+  const value = useMemo(() => ({ activeModule, setModule, can }), [activeModule, setModule, can]);
   return <AdminContext.Provider value={value}>{children}</AdminContext.Provider>;
 }
 
@@ -51,7 +50,10 @@ export function useAdmin(): AdminContextValue {
 }
 
 /**
- * API helpers bound to error toasts (403 renders a friendly permission message).
+ * API helpers bound to error toasts.
+ * - 401 → session expired: clears the stale staff session so the shell
+ *   swaps to the login screen immediately (no more broken menus/tabs).
+ * - 403 → friendly permission message.
  * Returns null on failure so callers can bail out of state updates.
  */
 export function useAdminApi() {
@@ -59,6 +61,11 @@ export function useAdminApi() {
     try {
       return await apiGet<T>(url);
     } catch (err) {
+      if (isUnauthorized(err)) {
+        useAppStore.getState().setStaff(null);
+        toast.error("Your session has expired. Please sign in again.");
+        return null;
+      }
       toast.error(errMessage(err));
       return null;
     }
@@ -69,6 +76,11 @@ export function useAdminApi() {
       try {
         return await apiSend<T>(url, method, body);
       } catch (err) {
+        if (isUnauthorized(err)) {
+          useAppStore.getState().setStaff(null);
+          toast.error("Your session has expired. Please sign in again.");
+          return null;
+        }
         toast.error(errMessage(err));
         return null;
       }
@@ -82,6 +94,11 @@ export function useAdminApi() {
       try {
         return await fn();
       } catch (err) {
+        if (isUnauthorized(err)) {
+          useAppStore.getState().setStaff(null);
+          toast.error("Your session has expired. Please sign in again.");
+          return null;
+        }
         toast.error(errMessage(err));
         return null;
       }

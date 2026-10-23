@@ -3,7 +3,6 @@
 /** Dashboard chrome: forest sidebar + sticky header + module router. */
 
 import { useState, type ComponentType } from "react";
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
   BarChart3,
@@ -98,9 +97,8 @@ export function AdminShell() {
   const staff = useAppStore((s) => s.staff);
   const setStaff = useAppStore((s) => s.setStaff);
   const navigate = useAppStore((s) => s.navigate);
-  const { module, setModule } = useAdmin();
+  const { activeModule: module, setModule } = useAdmin();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const router = useRouter();
 
   if (!staff) return null;
   const perms = staff.permissions;
@@ -238,8 +236,8 @@ export function AdminShell() {
                 <DropdownMenuItem onClick={() => navigate("home")}>
                   <ExternalLink className="h-4 w-4" /> View storefront
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => router.refresh()}>
-                  <LayoutDashboard className="h-4 w-4" /> Refresh dashboard
+                <DropdownMenuItem onClick={() => window.location.reload()}>
+                  <LayoutDashboard className="h-4 w-4" /> Reload dashboard
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem variant="destructive" onClick={logout}>
