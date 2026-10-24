@@ -2,11 +2,27 @@
 
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { LogIn, Menu as MenuIcon, ShoppingBag, UtensilsCrossed } from "lucide-react";
+import {
+  ChevronDown,
+  LogIn,
+  Menu as MenuIcon,
+  ShoppingBag,
+  UserRound,
+  UtensilsCrossed,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useAppStore, type View } from "@/store/app-store";
+import { useCurrency } from "./currency-context";
 import { cn } from "@/lib/utils";
 
 const NAV_LINKS: { view: View; label: string }[] = [
@@ -14,6 +30,7 @@ const NAV_LINKS: { view: View; label: string }[] = [
   { view: "menu", label: "Menu" },
   { view: "services", label: "Services" },
   { view: "eatntour", label: "Eat & Tour" },
+  { view: "blog", label: "Food Journal" },
   { view: "track", label: "Track Order" },
 ];
 
@@ -23,6 +40,8 @@ const MOBILE_LINKS: { view: View; label: string }[] = [
   { view: "services", label: "Services" },
   { view: "parlays", label: "Parlays & Hangouts" },
   { view: "eatntour", label: "Eat & Tour" },
+  { view: "blog", label: "Food Journal" },
+  { view: "delivery-info", label: "Delivery Info" },
   { view: "track", label: "Track Order" },
 ];
 
@@ -31,7 +50,10 @@ export function SiteHeader() {
   const view = useAppStore((s) => s.view);
   const cart = useAppStore((s) => s.cart);
   const setCartOpen = useAppStore((s) => s.setCartOpen);
+  const customer = useAppStore((s) => s.customer);
+  const setCustomer = useAppStore((s) => s.setCustomer);
   const bootstrap = useAppStore((s) => s.bootstrap);
+  const currency = useCurrency();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const count = cart.reduce((sum, item) => sum + item.quantity, 0);
@@ -41,6 +63,16 @@ export function SiteHeader() {
   function go(target: View) {
     setMobileOpen(false);
     navigate(target);
+  }
+
+  async function signOut() {
+    try {
+      await fetch("/api/account/logout", { method: "POST" });
+    } catch {
+      /* clearing local state regardless */
+    }
+    setCustomer(null);
+    navigate("home");
   }
 
   return (
@@ -88,6 +120,69 @@ export function SiteHeader() {
 
         {/* Actions */}
         <div className="flex items-center gap-1.5">
+          {/* Currency display estimates (spec §10) — GHS is the charged currency */}
+          {currency.enabled && currency.codes.length > 1 && (
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                aria-label={`Currency: ${currency.code}. Change display currency`}
+                className="hidden h-10 items-center gap-1 rounded-full border border-forest/30 px-3 text-sm font-semibold text-forest transition-colors hover:bg-forest/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:inline-flex"
+              >
+                {currency.code === "GHS" ? "GH₵" : currency.code}
+                <ChevronDown className="size-3.5" aria-hidden="true" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="rounded-xl">
+                <DropdownMenuLabel className="text-xs text-muted-foreground">
+                  Display currency
+                </DropdownMenuLabel>
+                {currency.codes.map((code) => (
+                  <DropdownMenuItem
+                    key={code}
+                    onClick={() => currency.setCode(code)}
+                    className={cn("gap-2", code === currency.code && "bg-forest/10 font-semibold text-forest")}
+                  >
+                    {code === "GHS" ? "GH₵ Cedi (charged)" : code}
+                    {code !== "GHS" && <span className="ml-auto text-[10px] text-muted-foreground">est.</span>}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+
+          {/* Account (spec §16) */}
+          {customer ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                aria-label={`Account: ${customer.name}. Open account menu`}
+                className="hidden h-10 items-center gap-1.5 rounded-full border border-forest/30 px-3 text-sm font-semibold text-forest transition-colors hover:bg-forest/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:inline-flex"
+              >
+                <UserRound className="size-4" aria-hidden="true" />
+                <span className="max-w-24 truncate">{customer.name.split(" ")[0]}</span>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="rounded-xl">
+                <DropdownMenuLabel className="truncate text-xs text-muted-foreground">
+                  {customer.email}
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => navigate("account")}>My account</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate("track")}>Track an order</DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => void signOut()} className="text-destructive">
+                  Sign out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate("account")}
+              className="hidden h-10 gap-1.5 px-3 text-forest hover:bg-forest/10 hover:text-forest lg:inline-flex"
+            >
+              <UserRound className="size-4" aria-hidden="true" />
+              Account
+            </Button>
+          )}
+
           <Button
             variant="ghost"
             size="sm"
@@ -156,6 +251,13 @@ export function SiteHeader() {
                   </button>
                 ))}
                 <div className="my-2 border-t border-border" />
+                <button
+                  type="button"
+                  onClick={() => go("account")}
+                  className="rounded-xl px-4 py-3 text-left text-sm font-medium text-forest hover:bg-forest/10"
+                >
+                  {customer ? "My Account" : "Sign in / Register"}
+                </button>
                 <button
                   type="button"
                   onClick={() => go("admin")}

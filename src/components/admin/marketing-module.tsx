@@ -15,8 +15,8 @@ import {
   Trash2,
   XOctagon,
 } from "lucide-react";
-import { apiSend, formatGHS } from "@/lib/client";
-import type { CouponDTO, CampaignAdminDTO } from "@/lib/types";
+import { apiGet, apiSend, formatGHS } from "@/lib/client";
+import type { CouponDTO, CampaignAdminDTO, ProductDTO } from "@/lib/types";
 import { useAdminApi } from "@/components/admin/admin-context";
 import {
   CampaignStatusBadge,
@@ -346,32 +346,46 @@ function CouponDialog({
 
 // ---------------- Campaigns ----------------
 
+const MEAL_TIME_LABELS: Record<string, string> = {
+  any: "Any time",
+  breakfast: "Breakfast",
+  lunch: "Lunch",
+  supper: "Supper",
+};
+
 function CampaignsTab() {
   const { get } = useAdminApi();
   const [campaigns, setCampaigns] = useState<CampaignAdminDTO[] | null>(null);
+  const [products, setProducts] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<CampaignAdminDTO | "new" | null>(null);
   const [deleting, setDeleting] = useState<CampaignAdminDTO | null>(null);
-
-  const load = useCallback(async () => {
-    const res = await get<{ campaigns: CampaignAdminDTO[] }>("/api/admin/campaigns");
-    if (res) setCampaigns(res.campaigns);
-    setLoading(false);
-  }, [get]);
+  const [nonce, setNonce] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       const res = await get<{ campaigns: CampaignAdminDTO[] }>("/api/admin/campaigns");
+      // Product names enrich the exact-dish targeting picker; /api/admin/products is
+      // menu.manage-gated, so marketing-only roles silently get an empty list.
+      const prods = await apiGet<{ products: ProductDTO[] }>("/api/admin/products")
+        .then((r) => r.products.map((p) => ({ id: p.id, name: p.name })))
+        .catch(() => [] as { id: string; name: string }[]);
       if (!cancelled) {
         if (res) setCampaigns(res.campaigns);
+        setProducts(prods);
         setLoading(false);
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [get]);
+  }, [get, nonce]);
+
+  const productName = useCallback(
+    (id: string) => products.find((p) => p.id === id)?.name,
+    [products]
+  );
 
   const totals = (campaigns ?? []).reduce(
     (acc, c) => ({ impressions: acc.impressions + c.impressions, clicks: acc.clicks + c.clicks, dismissals: acc.dismissals + c.dismissals }),
@@ -383,7 +397,7 @@ function CampaignsTab() {
     const res = await patchCampaign({ id: c.id, status });
     if (res !== null) {
       toast.success(`Campaign “${c.title}” → ${status}.`);
-      await load();
+      setNonce((n) => n + 1);
     }
   }
 
@@ -393,7 +407,7 @@ function CampaignsTab() {
       await apiSend(`/api/admin/campaigns?id=${encodeURIComponent(deleting.id)}`, "DELETE");
       toast.success("Campaign deleted.");
       setDeleting(null);
-      await load();
+      setNonce((n) => n + 1);
     } catch (err) {
       toast.error(errMessage(err));
     }
@@ -440,6 +454,20 @@ function CampaignsTab() {
                     <TableCell>
                       <p className="max-w-[200px] truncate font-medium">{c.title}</p>
                       <p className="max-w-[220px] truncate text-xs text-muted-foreground">{c.message}</p>
+                      {c.productId || (c.mealTime && c.mealTime !== "any") ? (
+                        <span className="mt-1 flex flex-wrap gap-1">
+                          {c.productId ? (
+                            <Badge variant="outline" className="border-teal-300 bg-teal-50 text-[11px] text-teal-900">
+                              Exact dish: {productName(c.productId) ?? "selected product"}
+                            </Badge>
+                          ) : null}
+                          {c.mealTime && c.mealTime !== "any" ? (
+                            <Badge variant="outline" className="border-orange-300 bg-orange-50 text-[11px] text-orange-900">
+                              {MEAL_TIME_LABELS[c.mealTime] ?? c.mealTime}
+                            </Badge>
+                          ) : null}
+                        </span>
+                      ) : null}
                     </TableCell>
                     <TableCell><Badge variant="outline" className="capitalize">{c.placement}</Badge></TableCell>
                     <TableCell><CampaignStatusBadge status={c.status} /></TableCell>
@@ -485,7 +513,13 @@ function CampaignsTab() {
         )}
       </div>
 
-      <CampaignDialog open={editing !== null} campaign={editing === "new" ? null : editing} onOpenChange={(o) => !o && setEditing(null)} onSaved={load} />
+      <CampaignDialog
+        open={editing !== null}
+        campaign={editing === "new" ? null : editing}
+        products={products}
+        onOpenChange={(o) => !o && setEditing(null)}
+        onSaved={() => setNonce((n) => n + 1)}
+      />
       <ConfirmDialog
         open={deleting !== null}
         onOpenChange={(o) => !o && setDeleting(null)}
@@ -516,13 +550,15 @@ function toLocalInput(iso: string): string {
 function CampaignDialog({
   open,
   campaign,
+  products,
   onOpenChange,
   onSaved,
 }: {
   open: boolean;
   campaign: CampaignAdminDTO | null;
+  products: { id: string; name: string }[];
   onOpenChange: (open: boolean) => void;
-  onSaved: () => Promise<void>;
+  onSaved: () => Promise<void> | void;
 }) {
   const { send } = useAdminApi();
   const [title, setTitle] = useState("");
@@ -539,6 +575,8 @@ function CampaignDialog({
   const [audience, setAudience] = useState("all");
   const [pageTarget, setPageTarget] = useState("all");
   const [device, setDevice] = useState("all");
+  const [productId, setProductId] = useState<string | null>(null);
+  const [mealTime, setMealTime] = useState<"any" | "breakfast" | "lunch" | "supper">("any");
   const [showOnce, setShowOnce] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -561,6 +599,8 @@ function CampaignDialog({
       setAudience(campaign?.audience ?? "all");
       setPageTarget(campaign?.pageTarget ?? "all");
       setDevice(campaign?.device ?? "all");
+      setProductId(campaign?.productId ?? null);
+      setMealTime(campaign?.mealTime ?? "any");
       setShowOnce(campaign?.showOnce ?? true);
     }
   }
@@ -599,9 +639,15 @@ function CampaignDialog({
       audience,
       pageTarget: pageTarget.trim() || "all",
       device,
+      productId,
+      mealTime,
       showOnce,
     };
-    const res = await send("/api/admin/campaigns", campaign ? "PATCH" : "POST", campaign ? { id: campaign.id, status, priority: payload.priority } : payload);
+    const res = await send(
+      "/api/admin/campaigns",
+      campaign ? "PATCH" : "POST",
+      campaign ? { id: campaign.id, status, priority: payload.priority, productId, mealTime } : payload
+    );
     setSaving(false);
     if (res !== null) {
       toast.success(campaign ? "Campaign updated." : "Campaign created.");
@@ -703,6 +749,47 @@ function CampaignDialog({
             <div className="space-y-1.5">
               <Label htmlFor="cp-target">Page target</Label>
               <Input id="cp-target" value={pageTarget} onChange={(e) => setPageTarget(e.target.value)} placeholder="all" />
+            </div>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label>Exact dish (optional)</Label>
+              {products.length === 0 ? (
+                <p className="rounded-lg bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
+                  Product list unavailable for your role — campaigns will target all dishes.
+                </p>
+              ) : (
+                <Select
+                  value={productId ?? "none"}
+                  onValueChange={(v) => setProductId(v === "none" ? null : v)}
+                >
+                  <SelectTrigger aria-label="Exact dish">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Any product</SelectItem>
+                    {products.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+            <div className="space-y-1.5">
+              <Label>Meal time</Label>
+              <Select value={mealTime} onValueChange={(v) => setMealTime(v as "any" | "breakfast" | "lunch" | "supper")}>
+                <SelectTrigger aria-label="Meal time">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="any">Any time</SelectItem>
+                  <SelectItem value="breakfast">Breakfast</SelectItem>
+                  <SelectItem value="lunch">Lunch</SelectItem>
+                  <SelectItem value="supper">Supper</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
           <div className="flex items-center justify-between rounded-xl border border-border p-3">

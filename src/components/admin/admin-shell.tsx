@@ -9,8 +9,10 @@ import {
   Bike,
   ClipboardList,
   ExternalLink,
+  HandPlatter,
   LayoutDashboard,
   LogOut,
+  MapPin,
   Megaphone,
   Menu as MenuIcon,
   Newspaper,
@@ -24,6 +26,8 @@ import { useAdmin, type AdminModule } from "@/components/admin/admin-context";
 import { initials } from "@/components/admin/admin-utils";
 import { OverviewModule } from "@/components/admin/overview-module";
 import { OrdersModule } from "@/components/admin/orders-module";
+import { QuotesModule } from "@/components/admin/quotes-module";
+import { ZonesModule } from "@/components/admin/zones-module";
 import { MenuModule } from "@/components/admin/menu-module";
 import { PaymentsModule } from "@/components/admin/payments-module";
 import { StaffModule } from "@/components/admin/staff-module";
@@ -57,10 +61,12 @@ interface NavItem {
 const NAV: NavItem[] = [
   { key: "overview", label: "Overview", icon: LayoutDashboard, visible: (p) => p.includes("orders.manage") },
   { key: "orders", label: "Orders", icon: ClipboardList, visible: (p) => p.includes("orders.manage") },
+  { key: "quotes", label: "Catering Quotes", icon: HandPlatter, visible: (p) => p.includes("catering.manage") },
   { key: "menu", label: "Menu", icon: UtensilsCrossed, visible: (p) => p.includes("menu.manage") },
   { key: "payments", label: "Payments", icon: Wallet, visible: (p) => p.includes("payments.review") },
   { key: "staff", label: "Staff & Roles", icon: Users, visible: (p) => p.includes("staff.manage") },
   { key: "dispatch", label: "Dispatch", icon: Bike, visible: (p, r) => p.includes("dispatch.manage") || r === "Dispatcher" },
+  { key: "zones", label: "Delivery Zones", icon: MapPin, visible: (p) => p.includes("zones.manage") },
   { key: "marketing", label: "Marketing", icon: Megaphone, visible: (p) => p.includes("marketing.manage") },
   { key: "content", label: "Website & Blog", icon: Newspaper, visible: (p) => p.includes("content.manage") },
   { key: "reports", label: "Reports", icon: BarChart3, visible: (p) => p.includes("reports.view") },
@@ -70,10 +76,12 @@ const NAV: NavItem[] = [
 const MODULE_TITLES: Record<AdminModule, string> = {
   overview: "Overview",
   orders: "Orders",
+  quotes: "Catering Quotes",
   menu: "Menu management",
   payments: "Payments",
   staff: "Staff & roles",
   dispatch: "Dispatch",
+  zones: "Delivery Zones",
   marketing: "Marketing",
   content: "Website & blog",
   reports: "Reports",
@@ -83,10 +91,12 @@ const MODULE_TITLES: Record<AdminModule, string> = {
 const MODULE_COMPONENTS: Record<AdminModule, ComponentType> = {
   overview: OverviewModule,
   orders: OrdersModule,
+  quotes: QuotesModule,
   menu: MenuModule,
   payments: PaymentsModule,
   staff: StaffModule,
   dispatch: DispatchModule,
+  zones: ZonesModule,
   marketing: MarketingModule,
   content: ContentModule,
   reports: ReportsModule,

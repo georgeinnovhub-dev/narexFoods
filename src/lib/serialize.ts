@@ -4,6 +4,7 @@ import type { OrderDTO, PaymentDTO } from "@/lib/types";
 
 type OrderWithRelations = Order & {
   items: OrderItem[];
+  deliveryZone?: { id: string; name: string } | null;
   events: { id: string; type: string; message: string; actor: string; createdAt: Date }[];
   payments: {
     id: string; provider: string; method: string; status: string; amount: number;
@@ -24,6 +25,15 @@ export function serializeOrder(o: OrderWithRelations): OrderDTO {
     customerPhone: o.customerPhone,
     customerEmail: o.customerEmail,
     address: o.address,
+    landmark: o.landmark,
+    locationConfirmed: o.locationConfirmed,
+    zoneName: o.deliveryZone?.name ?? null,
+    scheduledDate: o.scheduledDate,
+    scheduledTime: o.scheduledTime,
+    recipientName: o.recipientName,
+    recipientPhone: o.recipientPhone,
+    giftMessage: o.giftMessage,
+    hidePrices: o.hidePrices,
     note: o.note,
     subtotal: o.subtotal,
     discount: o.discount,
@@ -85,6 +95,7 @@ export function safeParse<T>(json: string | null | undefined, fallback: T): T {
 
 export const ORDER_INCLUDE = {
   items: true,
+  deliveryZone: true,
   events: { orderBy: { createdAt: "asc" as const } },
   payments: { orderBy: { createdAt: "desc" as const } },
   assignment: { include: { dispatcher: { include: { staff: true } } } },

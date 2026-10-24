@@ -5,11 +5,16 @@
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
+  AlertTriangle,
   Bike,
+  CalendarClock,
+  CheckCircle2,
   ChevronLeft,
   ChevronRight,
   Eye,
+  Gift,
   Inbox,
+  MapPin,
   PackageCheck,
   Search,
   ShoppingBag,
@@ -281,6 +286,12 @@ export function OrdersModule() {
                         {o.fulfillmentType === "delivery" ? <Bike className="h-3 w-3" /> : <Store className="h-3 w-3" />}
                         {o.fulfillmentType}
                       </Badge>
+                      {o.zoneName ? (
+                        <Badge variant="outline" className="mt-1 block max-w-[130px] truncate border-teal-300 bg-teal-50 font-normal text-teal-900">
+                          <MapPin className="mr-1 h-3 w-3 shrink-0" />
+                          {o.zoneName}
+                        </Badge>
+                      ) : null}
                     </TableCell>
                     <TableCell className="max-w-[220px] truncate text-muted-foreground">
                       {o.items.map((i) => `${i.quantity}× ${i.productName}`).join(", ")}
@@ -353,11 +364,64 @@ export function OrdersModule() {
                       {detail.fulfillmentType === "delivery" ? "Delivery address" : "Fulfillment"}
                     </p>
                     {detail.address ? <p>{detail.address}</p> : <p className="text-muted-foreground">Pickup at the restaurant</p>}
+                    {detail.zoneName ? (
+                      <Badge variant="outline" className="mt-1 border-teal-300 bg-teal-50 text-teal-900">
+                        <MapPin className="mr-1 h-3 w-3" /> Zone: {detail.zoneName}
+                      </Badge>
+                    ) : null}
+                    {detail.landmark ? (
+                      <p className="mt-1 text-xs text-muted-foreground">Landmark: {detail.landmark}</p>
+                    ) : null}
+                    {detail.fulfillmentType === "delivery" ? (
+                      detail.locationConfirmed ? (
+                        <p className="mt-1 flex items-center gap-1 text-xs font-medium text-green-700">
+                          <CheckCircle2 className="h-3.5 w-3.5" /> Location confirmed
+                        </p>
+                      ) : (
+                        <p className="mt-1 flex items-center gap-1 text-xs font-medium text-amber-700">
+                          <AlertTriangle className="h-3.5 w-3.5" /> Location not confirmed
+                        </p>
+                      )
+                    ) : null}
+                    {detail.scheduledDate || detail.scheduledTime ? (
+                      <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+                        <CalendarClock className="h-3.5 w-3.5" />
+                        Scheduled: {detail.scheduledDate ?? "—"}
+                        {detail.scheduledTime ? ` · ${detail.scheduledTime}` : ""}
+                      </p>
+                    ) : null}
                     {detail.note ? (
                       <p className="mt-1 rounded-lg bg-gold/10 px-2 py-1 text-xs text-amber-900">Customer note: {detail.note}</p>
                     ) : null}
                   </div>
                 </div>
+
+                {/* Gift order */}
+                {detail.recipientName ? (
+                  <div className="rounded-xl border border-violet-300 bg-violet-50 p-4 text-sm">
+                    <p className="flex items-center gap-2 text-sm font-semibold text-violet-900">
+                      <Gift className="h-4 w-4" /> Gift order
+                    </p>
+                    <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                      <div>
+                        <p className="text-xs uppercase tracking-wide text-violet-700/80">Recipient</p>
+                        <p className="font-semibold text-violet-950">{detail.recipientName}</p>
+                        {detail.recipientPhone ? <p className="text-violet-900/80">{detail.recipientPhone}</p> : null}
+                      </div>
+                      <div>
+                        <p className="text-xs uppercase tracking-wide text-violet-700/80">On the receipt</p>
+                        <Badge variant="outline" className="border-violet-300 bg-white text-violet-900">
+                          {detail.hidePrices ? "Prices hidden" : "Prices shown"}
+                        </Badge>
+                      </div>
+                    </div>
+                    {detail.giftMessage ? (
+                      <p className="mt-2 rounded-lg bg-white/70 px-3 py-2 text-xs italic text-violet-950">
+                        “{detail.giftMessage}”
+                      </p>
+                    ) : null}
+                  </div>
+                ) : null}
 
                 {/* Items */}
                 <div className="overflow-hidden rounded-xl border border-border">

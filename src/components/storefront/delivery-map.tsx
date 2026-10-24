@@ -7,7 +7,7 @@
  *   and moves the pin to the best match; falls back gracefully offline.
  */
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Compass, ExternalLink, Loader2, MapPin } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -36,9 +36,22 @@ function mapsSearchUrl(query: string): string {
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
 }
 
-export function DeliveryMapCard({ address, areas }: { address: string; areas: string[] }) {
+export function DeliveryMapCard({
+  address,
+  areas,
+  onLocationResolved,
+}: {
+  address: string;
+  areas: string[];
+  /** Optional callback with geocoded coordinates (null when unresolved/reset). */
+  onLocationResolved?: (coords: { lat: string; lng: string } | null) => void;
+}) {
   const [pin, setPin] = useState<Pin | null>(null);
   const [status, setStatus] = useState<MapStatus>("idle");
+  const resolvedRef = useRef(onLocationResolved);
+  useEffect(() => {
+    resolvedRef.current = onLocationResolved;
+  }, [onLocationResolved]);
 
   /* Render-phase adjustment: short/empty address always resets to the kitchen pin. */
   const query = address.trim();
@@ -55,7 +68,10 @@ export function DeliveryMapCard({ address, areas }: { address: string; areas: st
   /* Debounced geocode of the typed address (best-effort, silently offline-safe). */
   useEffect(() => {
     const trimmed = address.trim();
-    if (trimmed.length < 6) return;
+    if (trimmed.length < 6) {
+      resolvedRef.current?.(null);
+      return;
+    }
     let cancelled = false;
     const timer = setTimeout(() => {
       if (cancelled) return;
@@ -75,15 +91,18 @@ export function DeliveryMapCard({ address, areas }: { address: string; areas: st
             if (Number.isFinite(lat) && Number.isFinite(lon)) {
               setPin({ lat, lon, label: hit.display_name ?? trimmed });
               setStatus("found");
+              resolvedRef.current?.({ lat: String(lat), lng: String(lon) });
               return;
             }
           }
           setPin(null);
           setStatus("approx");
+          resolvedRef.current?.(null);
         } catch {
           if (!cancelled) {
             setPin(null);
             setStatus("approx");
+            resolvedRef.current?.(null);
           }
         }
       })();

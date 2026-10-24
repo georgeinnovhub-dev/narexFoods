@@ -6,15 +6,36 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAppStore } from "@/store/app-store";
+import { buildHash } from "@/lib/hash";
 import { Eyebrow, Reveal, SafeImage } from "./storefront-lib";
 import { ProductCard } from "./product-card";
 
 export function MenuView() {
   const bootstrap = useAppStore((s) => s.bootstrap);
   const params = useAppStore((s) => s.params);
-  const navigate = useAppStore((s) => s.navigate);
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<string>(params.category ?? "all");
+
+  /* Hash reactivity: when params.category changes while mounted (deep link /
+     back-forward), re-sync the filter; local tab changes stay in sync by
+     replacing the hash in place (no scroll jump, no history spam). */
+  const [lastParamCategory, setLastParamCategory] = useState(params.category);
+  if (params.category !== lastParamCategory) {
+    setLastParamCategory(params.category);
+    setCategory(params.category || "all");
+  }
+
+  /** Applies a category filter locally + mirrors it into the URL hash. */
+  function applyCategory(next: string) {
+    setCategory(next);
+    if (typeof window !== "undefined") {
+      window.history.replaceState(
+        null,
+        "",
+        next === "all" ? buildHash("menu") : buildHash("menu", { category: next })
+      );
+    }
+  }
 
   const products = useMemo(() => (bootstrap?.products ?? []).filter((p) => !p.archived), [bootstrap]);
 
@@ -61,10 +82,7 @@ export function MenuView() {
               <button
                 key={v.id}
                 type="button"
-                onClick={() => {
-                  setCategory(v.id);
-                  navigate("menu", { category: v.id });
-                }}
+                onClick={() => applyCategory(v.id)}
                 aria-pressed={category === v.id}
                 className="group relative overflow-hidden rounded-2xl border border-border bg-card text-left shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
@@ -87,10 +105,7 @@ export function MenuView() {
             ))}
             <button
               type="button"
-              onClick={() => {
-                setCategory("all");
-                navigate("menu");
-              }}
+              onClick={() => applyCategory("all")}
               aria-pressed={category === "all"}
               className="group flex min-h-[104px] flex-col items-start justify-center gap-1.5 rounded-2xl border-2 border-dashed border-forest/30 bg-background p-4 text-left transition-colors hover:border-forest hover:bg-forest/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
@@ -118,7 +133,13 @@ export function MenuView() {
           />
         </div>
 
-        <Tabs value={category} onValueChange={setCategory}>
+        <Tabs
+          value={category}
+          onValueChange={(v) => {
+            setQuery("");
+            applyCategory(v);
+          }}
+        >
           <TabsList className="h-auto w-full justify-start gap-1 overflow-x-auto rounded-full bg-muted/60 p-1.5 [&::-webkit-scrollbar]:hidden">
             <TabsTrigger
               value="all"
@@ -170,7 +191,7 @@ export function MenuView() {
               variant="outline"
               onClick={() => {
                 setQuery("");
-                setCategory("all");
+                applyCategory("all");
               }}
               className="min-h-11 rounded-full border-forest/30 text-forest hover:bg-forest hover:text-cream"
             >

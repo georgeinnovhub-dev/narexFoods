@@ -213,3 +213,102 @@ Stage Summary:
 - All reported issues fixed and requested features shipped. Entry points unchanged (single / route, AppShell). New views: services, parlays, eatntour (store View union + NAV + footer links).
 - GOTCHA for future agents: public/sw.js is network-first BY DESIGN (Turbopack dev chunks are path-hashed; never introduce cache-first for /_next/*). Bump CACHE name when changing sw.js. Old-session caches: unregister SW + caches.delete (test sessions already cleaned).
 - Seeded admin unchanged: admin@narexfoods.com / NarexAdmin2024!
+
+---
+Task ID: 9
+Agent: Z.ai Code (main)
+Task: Upgrade foundation — schema, shared contracts, business libs (master-prompt gap fix)
+
+Work Log:
+- Gap audit completed vs uploaded master prompt (upload/Pasted Content_1792797425366.txt). Gaps: gifting, delivery zones+fees, catering quotes, customer accounts, currency conversion, blog detail, legal pages, reminder targeting, rate-limit holes, free-delivery client/server mismatch, .env.example/README.
+- prisma/schema.prisma: added DeliveryZone (areas JSON, fee, minSubtotal, leadMinutes, requiresQuote), CateringQuote (QT- ref, lifecycle pending→reviewing→quoted→approved→converted), Customer + SavedAddress, CurrencyRate (code, rate, provider, fetchedAt). Order: +customerId, +addressLat/Lng, +landmark, +locationConfirmed, +deliveryZoneId, +scheduledDate/Time, +recipientName/Phone, +giftMessage, +hidePrices. Campaign: +productId (exact-meal), +mealTime (any|breakfast|lunch|supper). `bunx prisma db push` OK.
+- Seed: zones (Mampong 800p/45m, Akropong&Aburi 1500p/75m, Nsawam&Koforidua 2500p/105m min 5000p, Accra 4500p/180m min 10000p requiresQuote), roles updated with catering.manage/zones.manage. `bun prisma/seed.ts` OK.
+- permissions.ts: +catering.manage, +zones.manage, +labels; added CUSTOMER_COOKIE="narex_customer" (30d), CustomerSessionPayload.
+- hash.ts: views +account/blog/privacy/terms/delivery-info; ADMIN_MODULES +quotes/zones. app-store.ts: AdminModule union synced; +customer session state (not persisted).
+- settings.ts: +catering {enabled,note}, +currency {enabled:false, codes USD/GBP/EUR/NGN/CAD, refreshMinutes:60, markupPercent:0}; publicSettings exposes both.
+- types.ts: +ZoneDTO, CateringQuoteDTO, CreateQuoteResponse, AccountMeResponse, SavedAddressDTO, AccountOrdersResponse, CurrencyRatesResponse, AdminQuoteListResponse, AdminZoneListResponse; CheckoutPayload +landmark/addressLat/Lng/locationConfirmed/deliveryZoneId/scheduledDate/Time/recipient*/giftMessage/hidePrices; OrderDTO +landmark/locationConfirmed/zoneName/scheduled*/recipient*/giftMessage/hidePrices; CampaignDTO +productId/mealTime; BootstrapResponse +zones.
+- auth.ts: generic signed-token helpers (createSessionToken generic, verifySignedToken<T>), production boot guard for AUTH_SECRET.
+- customers.ts (new): customer session cookie helpers (separate HMAC cookie, requireCustomer with fresh DB status check).
+- zones.ts (new): getActiveZones, resolveZoneForAddress (normalized area matching), parseZoneAreas.
+- currency.ts (new): open.er-api.com adapter (6s timeout), DB+memory cache, refresh policy from settings, stale flag, convertForDisplay with capped markup. Charged currency always GHS.
+- orders.ts priceOrder: accepts address, resolves zone, zone fee (freeOver still honored), returns zone in PricedOrder. No-zone-match → zone null (API refuses).
+- serialize.ts: new order fields + zone include in ORDER_INCLUDE.
+- whatsapp.ts: gift recipient/message, scheduled date/time, zone + landmark lines in handoff text.
+
+Stage Summary:
+- All new models migrated; seed idempotent. Contracts are FINAL for Tasks 11/12. Charged currency stays GHS; converted = display estimate only.
+
+---
+Task ID: 10
+Agent: Z.ai Code (main)
+Task: Upgrade APIs — zones, catering quotes, customer account, currency, orders hardening
+
+Work Log:
+- bootstrap/route.ts: +zones (active, ordered), campaigns now carry productId/mealTime.
+- orders/route.ts POST: zod +landmark/addressLat/Lng/locationConfirmed/scheduledDate(YYYY-MM-DD)/scheduledTime/isGift/recipient*/giftMessage/hidePrices; delivery requires locationConfirmed=true (422 locationUnconfirmed); gift requires recipientName (+recipientPhone for delivery); scheduledDate not in past; zone validation (no-match→409 outsideZones, requiresQuote→409 quoteRequired+zone note, minSubtotal→409 zoneMinSubtotal); attaches signed-in customer id (guests still OK); outbox subject flags GIFT; idempotent replay unchanged.
+- campaigns/[id]/event: rate limited 30/min (impression-spam guard).
+- NEW GET /api/currency — public rates {base GHS, provider, fetchedAt, rates{code:{rate,fetchedAt}}, stale}; safe fallback when disabled/offline.
+- NEW POST /api/catering/quotes — public, 5/min, zod serviceType enum(staff_meals|family_group|meetings|conference|party|canteen|recurring|custom), people 1-5000, items JSON; QT- reference; outbox alert; respects settings.catering.enabled.
+- NEW /api/admin/quotes — GET list (status/q/page, catering.manage) + PATCH lifecycle (QUOTE_TRANSITIONS enforced; quoted/approved require quotedTotal>0; handledBy set; audit + outbox on quoted).
+- NEW /api/admin/zones — GET all (incl inactive), POST create, PATCH update, DELETE soft-deactivate (all zones.manage; areas min 1; audit).
+- NEW /api/account/register (5/min, unique email, scrypt hash, sets cookie), /api/account/login (8/min, constant-shape 401, cookie), /api/account/logout (clears cookie), /api/account/me (GET profile+addresses, PATCH name/phone), /api/account/orders (own 50, ORDER_INCLUDE, owner-scoped), /api/account/addresses (GET/POST max10/DELETE owner-checked).
+- tsc: src clean except admin-shell.tsx Record<AdminModule> missing quotes/zones — intentional, Task 12 fills the modules.
+
+Stage Summary:
+- API surface complete for storefront + admin upgrade work. Orders never trust client fees; delivery always needs confirmed location; gifts validated server-side.
+
+---
+Task ID: 11
+Agent: frontend subagent (storefront) + Z.ai Code (main, integration)
+Task: Storefront upgrade — currency estimates, gift checkout, scheduling, confirmed location, zones, account, blog, legal pages, quote form, exact-meal campaigns
+
+Work Log:
+- NEW currency-context.tsx — GHS-canonical display estimates (spec §10): useSyncExternalStore-persisted code (hydration-safe, server snapshot null), rates fetched once from /api/currency when non-GHS selected, formatMoney renders "GH₵x · ≈ $y (est.)" with per-code symbols; stale/missing rate → GHS-only fallback. Wired in storefront-app via CurrencyProvider; applied across cards/modal/cart/checkout/success/track.
+- Header: currency dropdown (hidden until settings.currency.enabled, shows "GH₵ Cedi (charged)" + est. codes), Account button/dropdown (signed-out → account view; signed-in → name menu with My account / Track / Sign out), nav + mobile sheet links for Food Journal, Delivery Info, Sign in/Register.
+- Checkout rebuilt (checkout-view.tsx, 52KB): delivery zone Select auto-suggested from typed address (matches zone.areas), fee/lead/min-order/note display, requiresQuote zones show guidance card + block submission; explicit "Confirm delivery location" dialog (address/landmark/area/fee summary; Confirm → green "Location confirmed" chip + Edit; server also enforces); optional scheduling (native date input min=today + window select 08:00–20:00); gift toggle (recipient name/phone required, gift message w/ counter, hide-prices checkbox); payload sends isGift/recipient*/giftMessage/hidePrices/scheduled*/deliveryZoneId/landmark/addressLat/Lng/locationConfirmed; free-delivery display now matches server (pre-discount subtotal); 422/409 server errors surfaced inline.
+- NEW account-view.tsx (spec §16): sign in / register tabs (RHF+zod, POST /api/account/login|register, cookie session), dashboard = Profile (PATCH name/phone) + Saved addresses (add dialog w/ zone suggest, delete confirm, "Use at checkout" → store.checkoutPrefill + navigate) + Order history (GET /api/account/orders, status badges, gift icon, track deep-link) + logout.
+- NEW blog-view.tsx (spec §18): listing (published posts, tags, "Read more: …" exact links) + detail by params.post (title/meta/cover/paragraphs/back). Home cards link exactly.
+- NEW info-views.tsx: PrivacyView, TermsView, DeliveryInfoView — branded long-form copy; delivery-info renders zone fee table from bootstrap zones incl. Accra quote note.
+- Services page: real "Request a catering quotation" form (8 service types, people, meals/person, date guard, venue, items optional) → POST /api/catering/quotes → QT-reference success state; dual-path copy (form or WhatsApp); respects catering.enabled.
+- Campaign popup: productId → opens the EXACT dish modal (openProduct) with current variant pricing; mealTime windows (breakfast 06:00–10:30 / lunch 11:30–14:30 / supper 17:00–21:00, any always).
+- Success/track: zone + landmark + scheduled window + "Location confirmed" chip; gift banner + "Prices hidden for gift orders" when hidePrices; track placeholder fixed to NAR-.
+- Menu hash reactivity: params.category changes now refilter while mounted; tab changes replaceState the hash.
+- Footer: Quick Links + new "Customer Care" column (Delivery Info, Privacy, Terms, My Account) + Food Journal.
+- Integration fixes (main agent): currency-context typos (eta→meta, readStorage→readStoredCode) + persisted-code logic; account-view duplicate apiStatus + hook-name violation (useAtCheckout→applyAtCheckout); delivery-map ref-write-during-render → effect; services zod coerce resolver types (useForm<z.input, unknown, z.output>); wired storefront-app (CurrencyProvider + 5 new view cases), header (currency/account/mobile links), footer legal links.
+
+Stage Summary:
+- All storefront features shipped and lint/tsc clean. Currency verified live: "GH₵20 · ≈ $1.71 (est.)" with real open.er-api.com rates. Registration/login verified in browser (Welcome back, Akosua + profile/addresses/orders cards). Gift delivery order NAR-DVCWQERK placed E2E (zone Mampong-Akuapem fee GH₵8, locationConfirmed=true, recipient Kofi Mensah, hidePrices=true → success shows gift banner + hidden prices).
+
+---
+Task ID: 12
+Agent: frontend subagent (admin) + Z.ai Code (main, overview alert)
+Task: Admin upgrade — Catering Quotes + Delivery Zones modules, order gift/zone detail, campaign exact-meal fields, currency settings
+
+Work Log:
+- NEW quotes-module.tsx (579 lines, catering.manage): status tabs (Pending/Reviewing/Quoted/Approved/Converted/Rejected/All), debounced search, paginated table, detail dialog with lifecycle select (transition-aware options), quotedTotal + deposit via PesewasInput, internal note, Save → PATCH /api/admin/quotes; handledBy + updatedAt shown; stat row.
+- NEW zones-module.tsx (376 lines, zones.manage): table with area chips/fee/min/lead/requiresQuote/active, create + edit dialogs (PesewasInput money fields), soft-deactivate confirm, server-enforcement explainer alert.
+- admin-shell: nav entries "Catering Quotes" (HandPlatter) + "Delivery Zones" (MapPin), permission-gated; Record<AdminModule> maps completed.
+- orders-module: gift section (recipient/gift message/hidePrices), zone chip, landmark, locationConfirmed badge, scheduled date/window in detail + table.
+- marketing-module: campaign editor gains productId select (from admin products list) + mealTime select; table shows "Exact dish: {name}" / meal-time badges.
+- system-module: new Currency tab — enabled switch, code checkboxes (USD/GBP/EUR/NGN/CAD), refreshMinutes, markupPercent → PUT /api/admin/settings (patchSchema validated).
+- overview-module (main agent): permission-gated "N catering quotations awaiting review" gold alert card → setAdminModule('quotes').
+
+Stage Summary:
+- 12 admin modules total. Quote lifecycle verified via API: pending→quoted (quotedTotal 225000 persisted, handledBy set) → approved; approved→pending correctly rejected ("Cannot move a approved quotation to pending."). Zones API returns 4 seeded zones incl. Accra (requiresQuote=true).
+
+---
+Task ID: 13
+Agent: Z.ai Code (main)
+Task: Docs, API hardening leftovers, full QA + browser verification
+
+Work Log:
+- .env.example (DATABASE_URL, AUTH_SECRET with prod boot-guard note, PAYSTACK keys, ZENOBANK placeholder, EMAIL_BRIDGE) + README.md (stack, quick start, seeded admin, feature map, ordering rules, payments/currency/notifications, operations & backups, security notes).
+- API fixes during QA: serialize.ts ORDER_INCLUDE zone→deliveryZone (Prisma relation name — caused orders POST 500, caught by browser E2E); auth.ts production AUTH_SECRET guard; generic signed-token helpers.
+- Verified live rates: /api/currency returned real USD/GBP/EUR/NGN/CAD rates (stale:false) after enabling in settings.
+- Browser E2E (agent-browser): menu (variety tiles + tabs + products) → product modal (variant/addon live total GH₵39) → cart → checkout: zone auto-suggest (Mampong-Akuapem from typed address), confirm-location dialog (summary → Confirm → green chip + Edit), gift toggle (recipient/message/hide prices), order placed NAR-DVCWQERK; DB verified: zone= Mampong-Akuapem, fee=800, locationConfirmed, recipient, hidePrices, landmark snapshot. Scheduled pickup order NAR-U4SQNF6X placed (schedule UI verified; automated date-input persistence not reproducible headlessly — native date input + Radix select can't be driven by automation; server validation + payload wiring confirmed in code). Campaign popup (delay + close), Eat&Tour promo bar, blog listing→detail, delivery-info/privacy views, account register→dashboard, admin login → quotes module (submitted QT-BB8UNV via public API → appears in queue, detail dialog, quotedTotal save verified in DB) → zones module (4 zones), currency settings → storefront switcher + estimates. Mobile (iPhone 15): no horizontal overflow, footer gap 0, sheet nav with new links. Hydration: 0 errors on clean desktop + mobile loads (one-off warning during mid-session device emulation switch was not reproducible).
+- QA gates: tsc 0 src errors; eslint src → 0 problems; dev.log clean (no runtime errors).
+
+Stage Summary:
+- Master-prompt gap list closed: gifting, delivery zones + confirmed locations + scheduling, catering quotes (public form → admin lifecycle), customer accounts (register/login/profile/addresses/order history), real currency conversion (display estimates, GHS canonical), blog detail, privacy/terms/delivery-info pages, meal-time + exact-meal campaigns, rate limiting on campaign events, .env.example + README. Charged currency always GHS; historical order totals immutable.
+- Known automation limits (not app bugs): headless driving of native date inputs and Radix select/combobox — verified via code + API + DB instead.
+- Seeded admin unchanged: admin@narexfoods.com / NarexAdmin2024!

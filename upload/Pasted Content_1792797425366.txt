@@ -1,0 +1,1078 @@
+# NAREX FOODS — ELITE FULL-STACK DEVELOPMENT MASTER PROMPT
+
+## 1. ROLE, MISSION AND PROJECT CONTINUITY
+
+Act as a senior full-stack architect, product engineer, UI/UX designer, database engineer, security engineer, QA engineer and deployment specialist.
+
+Your mission is to audit, complete, test and productionize the existing NAREX Foods / NAREX Kitchen application into an elegant, reliable, mobile-first food ordering, catering, gifting and delivery platform.
+
+**Existing project directory**
+
+`C:\Users\LENOVO\Documents\iDe8\Programming\NAREX\NAREX-Kitchen\narex-fullstack`
+
+**Brand**
+- Business: NAREX Foods.
+- Tagline: “GOOD FOOD. GREAT TASTE. MADE WITH CARE.”
+- Primary location: Mampong-Akuapem, Ghana.
+- Delivery destinations: Mampong-Akuapem, Accra and other administrator-approved locations.
+- Business contact and WhatsApp: 0559291195.
+- Default currency: Ghana cedi (GHS, GH₵).
+- Development attribution: iDe8 Flow Hub where appropriate; do not invent public developer contact details.
+
+### Non-negotiable development rules
+
+1. Inspect the actual repository, package scripts, existing routes, components, migrations, database, integrations, environment variables and current Git state before making changes.
+2. Produce a concise implementation audit identifying what works, what is incomplete, what is broken and what is missing.
+3. Continue the existing architecture and coding conventions whenever reasonable. Do not rebuild the application from scratch simply to match a proposed folder structure.
+4. Preserve existing customer records, orders, settings, uploaded assets and working functionality. Back up relevant data before risky migrations or destructive operations.
+5. Never replace real integrations with hardcoded demo data, fake API responses or nonfunctional buttons.
+6. Prefer free and open-source tools where practical. Avoid mandatory paid subscriptions unless genuinely required; isolate optional paid services behind replaceable adapters.
+7. Never expose API secrets, service-role keys, payment credentials or privileged database access in client-side code.
+8. Implement features end-to-end, including validation, authorization, database persistence, error handling, responsive UI and tests.
+9. Do not mark a feature complete merely because its page renders. Verify its actual workflow.
+10. Work in small, reviewable stages. Run relevant tests after changes, report failures honestly and fix regressions before proceeding.
+11. Never overwrite an existing `.env` file or replace production data without an approved backup and migration plan.
+12. If a required credential, external service or business rule is unavailable, implement the safe integration boundary, document the exact missing configuration and continue with the working parts.
+
+---
+
+## 2. REQUIRED APPLICATION ARCHITECTURE
+
+Audit the existing stack first. Prefer the existing Next.js, TypeScript, Tailwind CSS and Supabase setup if already present and suitable.
+
+Use a maintainable feature-oriented architecture. Integrate the following responsibilities into the existing project without duplicating established modules:
+
+- Public storefront and landing pages.
+- Menu catalogue and configurable meal variants.
+- Search, filtering, product details and availability.
+- Shopping cart and checkout.
+- Customer accounts and order history.
+- Service packages, bulk ordering and catering quotations.
+- Gift orders and multiple-recipient ordering where supported.
+- Map-based address selection and delivery coverage.
+- Delivery scheduling and dispatch management.
+- Payment integrations and manual-payment review.
+- Currency conversion.
+- Meal reminders, promotions and notification preferences.
+- Staff enrollment, role-based access control and audit logs.
+- Admin dashboard, reporting and analytics.
+- Blog and content management.
+- Editable website appearance and content.
+- Notification and email automation.
+- Settings, integrations, health checks and operational tools.
+
+Use server-side business logic for pricing, permissions, payment verification, delivery eligibility, quotations and order-state transitions.
+
+### Suggested route organization
+
+Adapt this to the actual repository rather than creating duplicate routes.
+
+**Public**
+- `/`
+- `/menu`
+- `/menu/[slug]`
+- `/packages`
+- `/catering`
+- `/gift-a-meal`
+- `/cart`
+- `/checkout`
+- `/order-confirmation/[id]`
+- `/track-order/[id]`
+- `/blog`
+- `/blog/[slug]`
+- `/contact`
+- `/delivery`
+- `/privacy`
+- `/terms`
+
+**Authentication and customer**
+- `/login`
+- `/register`
+- `/forgot-password`
+- `/account`
+- `/account/profile`
+- `/account/orders`
+- `/account/addresses`
+- `/account/payments`
+- `/account/notifications`
+
+**Administration**
+- `/admin`
+- `/admin/orders`
+- `/admin/menu`
+- `/admin/categories`
+- `/admin/packages`
+- `/admin/catering`
+- `/admin/customers`
+- `/admin/gifts`
+- `/admin/payments`
+- `/admin/receipts`
+- `/admin/delivery-zones`
+- `/admin/dispatch`
+- `/admin/staff`
+- `/admin/roles`
+- `/admin/campaigns`
+- `/admin/meal-reminders`
+- `/admin/currencies`
+- `/admin/analytics`
+- `/admin/reports`
+- `/admin/blog`
+- `/admin/website-editor`
+- `/admin/notifications`
+- `/admin/audit`
+- `/admin/integrations`
+- `/admin/settings`
+
+**Dispatch**
+- `/dispatch`
+- `/dispatch/assignments`
+- `/dispatch/orders/[id]`
+- `/dispatch/profile`
+
+Hide protected routes and navigation entries from unauthorized roles, but always enforce permissions on the server as well.
+
+---
+
+## 3. BRANDING AND PREMIUM CUSTOMER EXPERIENCE
+
+Create an elegant, contemporary food-commerce experience inspired by premium restaurant ordering platforms.
+
+### Design direction
+
+- Strong food photography, warm food-inspired colors and clean backgrounds.
+- Premium typography, clear headings, generous spacing and consistent visual hierarchy.
+- Carefully designed product cards with readable prices and visible meal options.
+- Attractive hero sections, featured meals, popular choices and catering promotions.
+- Smooth, subtle animations, responsive carousels and polished transitions.
+- Responsive navigation with a mobile-friendly menu, cart indicator and prominent ordering actions.
+- Accessible forms, dialogs, menus, focus states and keyboard navigation.
+- Optimized layouts for mobile phones, tablets and desktops.
+- Useful loading skeletons, empty states, error messages and success confirmations.
+- Consistent design tokens for colors, spacing, typography, radii and shadows.
+
+Use real, licensed or otherwise appropriately usable food imagery. Do not present unrelated stock images as exact photographs of a product when they are merely illustrative.
+
+Avoid excessive animations, intrusive popups, fake countdowns, false scarcity or deceptive discounts.
+
+Use polished inline feedback, toast notifications and accessible dialogs instead of relying on generic browser alerts for ordinary application interactions.
+
+### Homepage sections
+
+Include:
+- Brand hero with a clear order action.
+- Featured menu items.
+- Popular meals.
+- Service packages and catering.
+- Staff, family and event meal offerings.
+- Meal gifting.
+- Delivery coverage and ordering information.
+- Customer testimonials only when genuine and authorized.
+- Blog or food updates.
+- WhatsApp contact and footer navigation.
+
+---
+
+## 4. AUTHORITATIVE MENU AND PRICING MODEL
+
+Use the following initial menu and prices as seed data only when they do not conflict with established business records. Administrators must be able to edit them.
+
+### A. Yam OR Plantain OR Rice with Palava Sauce
+
+The customer chooses exactly one staple:
+- Yam.
+- Plantain.
+- Rice.
+
+The customer also chooses exactly one portion size:
+
+| Portion | Initial price |
+|---|---:|
+| Small | GH₵20 |
+| Medium | GH₵25 |
+| Large | GH₵30 |
+
+### B. Yam OR Plantain OR Rice with Vegetable Stew
+
+The customer chooses exactly one staple:
+- Yam.
+- Plantain.
+- Rice.
+
+| Portion | Initial price |
+|---|---:|
+| Small | GH₵20 |
+| Medium | GH₵25 |
+| Large | GH₵30 |
+
+### C. Jollof Rice
+
+- With egg: GH₵25.
+- With chicken: GH₵35.
+
+Treat these as distinct configurable options, each with its own price and availability.
+
+### D. Rice Balls with Groundnut Soup
+
+- Initial price: GH₵30.
+
+Keep this as a fixed menu item unless an administrator configures additional valid variants.
+
+### Menu configuration requirements
+
+1. Never interpret “Yam / Plantain / Rice with Palava Sauce” as a plate containing all three staples.
+2. Require exactly one valid staple and one valid portion for the first two meal types.
+3. Derive prices from trusted server-side menu records.
+4. Store the chosen sauce, staple, portion, extras and price snapshot with every order item.
+5. Show the exact configuration on product cards where appropriate, cart, checkout, payment summary, customer order history, kitchen preparation view, reports and WhatsApp order text.
+6. Prevent invalid, unavailable or tampered variants from being submitted.
+7. Support product photos, descriptions, allergen information when verified, preparation notes, serving schedules, stock status and availability windows.
+8. Allow authorized staff to manage prices, variants, images, meal categories and menu availability.
+9. Display the original currency price clearly.
+10. Do not hardcode menu prices in multiple components. Use the database and a shared pricing service.
+
+Example valid order item:
+
+“Plantain with Palava Sauce — Medium — GH₵25.”
+
+---
+
+## 5. STORE FRONT, CART AND CHECKOUT
+
+Implement a complete order journey:
+
+1. Browse and search the menu.
+2. Select a product.
+3. Choose required variants and quantity.
+4. Add the configured item to the cart.
+5. Adjust quantities and remove items.
+6. Choose delivery, pickup or an available catering arrangement.
+7. Choose whether ordering for oneself or gifting to another person.
+8. Enter customer and recipient details as applicable.
+9. Select and confirm the delivery location where required.
+10. Choose an available delivery date and time.
+11. Review item prices, discounts, delivery fees, applicable charges and total.
+12. Select a supported payment method.
+13. Confirm the order and see its reference and actual payment status.
+14. View order details and permitted status updates.
+
+Use server-side validation for prices, discounts, inventory, delivery fees and order totals. Never trust the client-submitted total.
+
+Persist the cart appropriately for signed-in customers and support a secure guest checkout if compatible with the existing architecture.
+
+Do not collect more personal information than necessary.
+
+---
+
+## 6. DELIVERY ADDRESS MAP AND CONFIRMATION
+
+Implement an interactive map-based delivery-location workflow.
+
+### Customer experience
+
+- Search for an address where supported.
+- Enter a manual address.
+- Use current-location assistance only after the customer explicitly requests it and grants permission.
+- Show an interactive map with a movable pin.
+- Show a preview of the selected location and available address details.
+- Allow the customer to adjust the pin.
+- Collect an optional landmark and delivery instructions.
+- Provide a **Confirm delivery location** action.
+- Show a confirmation dialog summarizing the selected address.
+- Offer **Confirm location** and **Edit location**.
+- Save the confirmed location only after confirmation.
+- Allow changes before the order is placed.
+
+### Technical requirements
+
+Store the address, coordinates where available, landmark, instructions, confirmation status and order-time location snapshot.
+
+Integrate a suitable map and geocoding provider. Prefer a free/open-source stack when practical, but respect tile-provider terms, rate limits and production requirements.
+
+Keep provider secrets server-side. Document setup and support a manual-address fallback when map services are unavailable.
+
+Do not silently move the pin, silently substitute the customer's location or mark an address confirmed without customer action.
+
+Validate delivery coverage on the server before final checkout. Pickup orders should not require a delivery address.
+
+Protect addresses and coordinates through strict role-based access controls.
+
+---
+
+## 7. DELIVERY TO MAMPONG-AKUAPEM, ACCRA AND APPROVED AREAS
+
+Accra must be a supported target delivery area, subject to real operational coverage and capacity.
+
+Implement administrator-managed delivery zones with configurable:
+- Area names and boundaries or serviceable postcodes/locations.
+- Minimum order values.
+- Delivery fees.
+- Distance-based or zone-based pricing rules.
+- Long-distance and bulk-order surcharges.
+- Service hours.
+- Delivery lead times.
+- Advance-booking requirements.
+- Maximum delivery capacity.
+- Scheduled delivery runs.
+- Manual quotation requirements.
+
+Use the confirmed delivery pin to validate the selected zone and applicable fee.
+
+Before payment, show whether delivery is available, the applicable charge or quotation, and a realistic delivery window.
+
+If an Accra delivery requires special transport arrangements, offer an explicit quote or approval workflow. Never claim that all Accra addresses are serviceable without validation.
+
+Allow pickup and delivery to follow different rules. Keep delivery charges separate from food prices and record them independently.
+
+---
+
+## 8. SERVICE PACKAGES, BULK ORDERS AND CATERING
+
+Build a dedicated service-package and catering module.
+
+### Supported service types
+
+- Staff and workplace meals.
+- Family and group meals.
+- Meetings and workshops.
+- Conferences and events.
+- Parties and celebrations.
+- Canteens and institutional meal supply.
+- Custom catering requests.
+- Recurring organizational meal arrangements.
+
+### Package configuration
+
+Administrators can configure:
+- Package name, description and image.
+- Package category.
+- Included meal items and quantities.
+- Allowed menu variants.
+- Minimum and maximum servings.
+- Fixed, per-person or configurable pricing.
+- Optional extras.
+- Availability and booking deadlines.
+- Preparation lead times.
+- Delivery requirements.
+- Deposit and balance-payment rules.
+- Cancellation and amendment policies.
+- Quotation requirements.
+- Production capacity.
+
+### Customer workflow
+
+Customers can:
+- Choose a package or request a custom quote.
+- Specify the number of people and meals.
+- Configure meal variants.
+- Select service and delivery dates.
+- Provide the venue, delivery pin, contact person and instructions.
+- Review package inclusions and itemized pricing.
+- Submit a quotation request when necessary.
+- Accept an approved quotation.
+- Pay the applicable deposit or amount.
+- Review order progress and payment balances.
+
+Support scheduled and recurring staff meal arrangements with explicit confirmation and agreed payment terms.
+
+Keep quotations, accepted prices, deposits, balances, cancellations and refunds auditable. Do not confirm an unapproved quote as an accepted booking.
+
+Apply production capacity and delivery capacity checks before accepting large orders.
+
+---
+
+## 9. PAY FOR SOMEONE ELSE — MEAL GIFTING
+
+Support a dedicated **Send a Meal to Someone** workflow.
+
+Customers can choose to order for themselves or another person.
+
+For gift orders, collect:
+- Recipient name.
+- Recipient phone number where needed for delivery.
+- Delivery address and confirmed map pin.
+- Landmark and delivery instructions.
+- Optional gift message.
+- Requested delivery time.
+- Optional setting to hide item prices from the recipient.
+
+The purchaser reviews and pays for the order. The recipient must not be required to pay again for an order already paid for.
+
+Recipients should not need a NAREX account to receive an eligible gift order.
+
+Maintain separate purchaser and recipient records. Apply appropriate privacy and access restrictions. Do not expose the purchaser's personal details or confidential gift message to unauthorized users.
+
+Support:
+- Single-meal gifts.
+- Multiple-meal gifts.
+- Bulk gifts.
+- Group packages.
+- Multiple recipients where operationally supported.
+- Recipient notifications with appropriate consent and privacy controls.
+- Gift-order tracking.
+- Delivery confirmation.
+- Refund and cancellation handling.
+
+For multiple destinations, calculate delivery costs and feasibility separately as required. Never imply a single delivery fee covers multiple destinations unless the pricing rules confirm that.
+
+Keep payment status separate from delivery status.
+
+---
+
+## 10. REAL CURRENCY CONVERSION
+
+Build a reusable currency-conversion service using genuine exchange-rate data.
+
+### Canonical currency
+
+GHS is the base currency for:
+- Menu pricing.
+- Service packages.
+- Delivery charges.
+- Accounting.
+- Default order totals.
+- Revenue reporting.
+
+### Currency support
+
+Initially support:
+- GHS.
+- USD.
+- GBP.
+- EUR.
+- NGN.
+- CAD.
+
+Allow additional supported currencies to be configured.
+
+### Exchange-rate requirements
+
+1. Integrate a genuine exchange-rate API.
+2. Prefer a free, suitable provider initially, with a replaceable adapter for future providers.
+3. Distinguish daily reference rates from genuinely intraday market rates.
+4. Store the provider, rate, source currency, target currency and timestamp.
+5. Cache rates and refresh according to provider capability and configured policy.
+6. Handle rate limits, missing currency pairs, invalid responses and provider outages.
+7. Do not invent or silently assume exchange rates.
+8. Display the last update time and label converted prices as estimates where appropriate.
+9. Preserve the original GHS price and the rate snapshot used for historical records.
+10. Do not retroactively change an existing order's price when rates change.
+
+### Checkout and actual payments
+
+A converted display price does not automatically mean foreign-currency payment is supported.
+
+Clearly show the transaction currency and actual amount before payment. Only offer a foreign-currency charge when the selected payment provider and merchant configuration genuinely support it.
+
+If foreign-currency charging is implemented, verify the payment amount server-side and preserve the actual charged currency, amount, transaction reference, relevant rate snapshot and provider result.
+
+Handle rounding, provider fees, conversion spreads and refunds transparently.
+
+When rates are unavailable or stale, continue to show valid GHS prices. Do not block ordinary GHS checkout unnecessarily.
+
+Add an administrator settings area for provider selection, supported currencies, refresh policies and any permitted display markup.
+
+---
+
+## 11. PAYMENTS AND PAYMENT VERIFICATION
+
+Support a payment architecture that can integrate:
+- Paystack.
+- Zenobank, subject to confirmation of its actual API, documentation and supported merchant functionality.
+- Manual bank or mobile-money transfer with receipt upload.
+- WhatsApp-assisted ordering and payment coordination where appropriate.
+
+Use a provider adapter pattern so each integration can be enabled independently.
+
+### Paystack and Zenobank
+
+Before implementing either provider, inspect the official documentation and verify:
+- Supported currencies.
+- Payment initialization.
+- Callback and webhook verification.
+- Transaction status lookup.
+- Refund support.
+- Signature validation.
+- Idempotency support.
+- Required merchant configuration.
+
+Never invent API endpoints or assume Zenobank supports features that have not been verified.
+
+Keep credentials server-side and provide `.env.example` entries with placeholders only.
+
+Verify transaction status through trusted server-side provider APIs or validated webhooks. Do not mark an order paid merely because the browser returns to a success URL.
+
+### Manual payment
+
+Allow customers to upload a receipt where manual transfer is enabled.
+
+A receipt upload must not automatically mark the order as paid. Provide a protected review queue for authorized staff to approve or reject the payment evidence and record the decision.
+
+Keep:
+- Payment status.
+- Order status.
+- Refund status.
+- Catering deposit/balance status.
+
+as separate, consistently managed fields.
+
+Prevent duplicate webhook processing and duplicate payment application.
+
+---
+
+## 12. WHATSAPP ORDERING
+
+Integrate the business WhatsApp number 0559291195.
+
+Provide a clear WhatsApp order action from relevant product, cart, catering and order pages.
+
+Generate a readable, encoded message containing:
+- Order reference where available.
+- Exact menu items.
+- Selected staple and sauce.
+- Portion size.
+- Configured meal variants.
+- Quantities.
+- Package or catering details.
+- Confirmed delivery/pickup choice.
+- Delivery area and relevant address summary.
+- Delivery date and time.
+- Itemized prices and total in the applicable currency.
+- Payment status where appropriate.
+
+Do not include passwords, API secrets, payment credentials or unnecessary sensitive data.
+
+Opening WhatsApp must not falsely imply that an order was submitted, paid or accepted by NAREX. Make the distinction between a prepared message, a submitted order and a confirmed order clear.
+
+If automatic WhatsApp messaging is later required, use an approved integration and documented consent requirements. Do not depend on undocumented endpoints.
+
+---
+
+## 13. PERIODIC MEAL REMINDERS AND EXACT-MEAL POPUPS
+
+Create a **Meal Reminder & Smart Menu Popup Engine** driven by live database records.
+
+### Scheduling
+
+Allow authorized administrators to configure:
+- Breakfast, lunch, supper and other suitable serving windows.
+- Timezone and local schedule.
+- Recurrence.
+- Campaign start and end dates.
+- Audience.
+- Quiet hours.
+- Frequency caps.
+- Cooldown intervals.
+- Popup placement.
+- Active, paused and expired status.
+
+Support scheduled and manually created campaigns.
+
+### Exact meal matching
+
+Each reminder must correspond to an actual menu item or configured variant.
+
+For example:
+- “Jollof Rice with Egg” must show the correct egg option and current price.
+- “Jollof Rice with Chicken” must show the correct chicken option and current price.
+- “Plantain with Palava Sauce” must open the correct menu item with valid portion choices.
+- “Rice with Vegetable Stew” must preserve the exact selected configuration.
+
+Never show a generic popup that leads to a different meal than the one advertised.
+
+Use live product images, names, prices, options, serving schedules and availability.
+
+### Customer controls
+
+Allow customers to:
+- Dismiss a popup.
+- Snooze a reminder where suitable.
+- Disable optional reminders.
+- Manage notification preferences.
+
+Do not interrupt payment or block checkout. Apply sensible frequency caps and suppress duplicate reminders.
+
+In-app banners and popups are the initial channel. Browser push requires permission. Email and marketing messages require appropriate consent and compliance.
+
+Use reliable scheduled processing rather than relying on a browser tab remaining open.
+
+### Campaign analytics
+
+Track appropriate aggregate performance metrics such as impressions, dismissals, clicks and resulting orders. Minimize personal data collection.
+
+---
+
+## 14. AUTHENTICATION, STAFF ENROLLMENT AND PERMISSIONS
+
+Implement secure authentication and role-based access control using the established authentication provider.
+
+Support:
+- Customer registration and sign-in.
+- Password reset.
+- Staff invitation and enrollment.
+- Account activation and deactivation.
+- Session management.
+- Role assignment.
+- Fine-grained permissions.
+- Permission-protected navigation.
+- Audit history.
+
+Potential roles include:
+- Superadmin.
+- Administrator.
+- Manager.
+- Cashier or payment reviewer.
+- Kitchen staff.
+- Dispatcher.
+- Delivery staff.
+- Catering manager.
+- Marketing/content manager.
+- Customer.
+
+Support custom roles and granular permissions such as:
+- View orders.
+- Edit orders.
+- Approve catering quotes.
+- Review manual receipts.
+- Manage payments.
+- Manage menu and prices.
+- Manage staff.
+- Manage delivery zones.
+- Assign dispatch.
+- Manage campaigns.
+- Edit website content.
+- View reports.
+- Manage integrations.
+
+Use least privilege. A staff member should only access the functions explicitly authorized for their role.
+
+Hide unauthorized tabs and actions in the UI and enforce all permissions in server-side actions, APIs and database policies.
+
+Protect privileged account creation and role escalation. Require confirmation for sensitive actions and maintain audit records.
+
+---
+
+## 15. DISPATCH AND DELIVERY OPERATIONS
+
+Build a dispatcher workspace for authorized staff.
+
+Include:
+- Incoming delivery queue.
+- Delivery zone and address summary.
+- Confirmed map location.
+- Order size and special handling notes.
+- Scheduled delivery window.
+- Driver or delivery-staff assignment.
+- Status changes.
+- Delivery notes.
+- Failed-delivery and rescheduling workflow.
+- Completion record.
+- Customer notification where appropriate.
+
+Suggested order lifecycle:
+
+`Pending payment → Payment review/verification → Confirmed → Preparing → Ready for dispatch → Dispatched → Delivered`
+
+Support legitimate alternatives such as pickup, quotation pending, cancelled, payment failed, refunded and delivery exception.
+
+Do not allow invalid status transitions or mark an order delivered solely because a driver opens its detail page.
+
+Use a status history with timestamps and the responsible authorized actor.
+
+For Accra and bulk orders, support scheduled delivery runs and capacity-aware dispatch assignment.
+
+---
+
+## 16. CUSTOMER DASHBOARD AND ORDER HISTORY
+
+Provide a customer account experience with:
+- Profile management.
+- Saved addresses where supported.
+- Order history.
+- Order details and status.
+- Payment records.
+- Gift orders.
+- Catering quotations.
+- Service package bookings.
+- Notification preferences.
+- Order tracking.
+- Receipts and permitted downloadable records.
+
+Ensure that one customer cannot access another customer's order, recipient details, addresses or payment records by changing an identifier in the URL.
+
+Guest tracking should use secure, appropriately scoped tokens or another verified mechanism rather than predictable order IDs alone.
+
+---
+
+## 17. ADMIN DASHBOARD AND ANALYTICS
+
+Create a premium, responsive dashboard using actual persisted data.
+
+### Overview metrics
+
+- Orders today and over selected periods.
+- Confirmed revenue.
+- Pending orders.
+- Orders awaiting payment verification.
+- Cancelled and refunded orders.
+- Average order value.
+- Popular meals and variants.
+- Service package and catering performance.
+- Bulk-order volumes.
+- Gift-order statistics.
+- Delivery-zone performance.
+- Accra order volumes.
+- Delivery completion and exception rates.
+- Currency conversion usage.
+- Campaign and reminder performance.
+- Staff activity where authorized.
+
+Use correct definitions for revenue. Do not count pending payments, rejected receipts or unpaid quotations as completed revenue.
+
+Support date ranges, relevant filters, pagination, CSV exports and permission-aware reports.
+
+For historical reports, preserve the actual transaction currency and original order-time price snapshots. Do not combine currencies without explicitly converting them using a documented methodology.
+
+Avoid fabricated statistics and fake chart values.
+
+---
+
+## 18. BLOG AND CONTENT MANAGEMENT
+
+Implement:
+- Blog listing and detail pages.
+- Categories and tags.
+- Draft, preview, publish and archive workflows.
+- Featured images.
+- Search and pagination.
+- SEO metadata.
+- Author attribution where appropriate.
+- Scheduling where supported.
+- Permission-controlled editing.
+
+Ensure content is validated and sanitized. Do not render unsafe HTML from arbitrary user submissions.
+
+---
+
+## 19. SUPERADMIN WEBSITE EDITOR
+
+Allow authorized administrators to edit supported public-facing website content without redeploying the application.
+
+Editable elements may include:
+- Homepage headings and descriptions.
+- Menu and package descriptions.
+- Hero content and image selections.
+- Banner text.
+- Contact information.
+- Blog content.
+- Delivery information.
+- FAQs.
+- Footer content.
+- Selected colors, themes and supported layout options.
+- Promotional campaign text.
+- Notification templates.
+
+Use typed schemas, safe defaults, preview, publish and rollback functionality.
+
+Do not allow unrestricted arbitrary code injection, raw script execution or arbitrary CSS that can compromise the application.
+
+Validate edits and log the editor, timestamp and relevant version information. Keep critical checkout and payment behavior outside the scope of arbitrary content editing.
+
+---
+
+## 20. SUPABASE DATABASE AND DATA INTEGRITY
+
+Use Supabase as the authoritative data store if confirmed by the current project architecture.
+
+Inspect existing tables and migrations before introducing new schema.
+
+The conceptual data model should cover:
+
+- Profiles and staff memberships.
+- Roles and permissions.
+- Menu categories and products.
+- Product variants and pricing.
+- Orders and order items.
+- Customer and recipient details.
+- Delivery addresses and order-location snapshots.
+- Delivery zones and pricing rules.
+- Service packages and package items.
+- Catering quotations and approvals.
+- Recurring service schedules.
+- Payments, refunds and manual receipt reviews.
+- Gift orders and recipients.
+- Dispatch assignments and delivery events.
+- Currency providers and rate snapshots.
+- Campaigns and meal reminders.
+- Notification preferences and delivery logs.
+- Blog posts and categories.
+- Website content and version history.
+- Audit events.
+- Integration configuration references.
+- Email outbox and retry records.
+
+This is a logical design, not a mandate to create duplicate tables where equivalent structures already exist.
+
+### Database safeguards
+
+1. Use reviewed, version-controlled migrations.
+2. Add appropriate foreign keys, constraints, indexes and uniqueness rules.
+3. Use transactions or safe equivalent workflows for multi-step order and payment operations.
+4. Apply Row Level Security to exposed Supabase tables.
+5. Never expose the Supabase service-role key to browsers.
+6. Use server-side validation and authorization.
+7. Prevent duplicate orders, payments, webhook applications and scheduled campaign executions.
+8. Keep immutable historical order and payment snapshots where required.
+9. Avoid logging secrets or unnecessary personal data.
+10. Document backups and recovery procedures.
+
+---
+
+## 21. EMAIL AUTOMATION: GOOGLE SHEETS AND APPS SCRIPT
+
+Use Google Sheets and Apps Script as supporting automation services, not as the primary order database.
+
+Potential uses:
+- Order confirmation emails.
+- Catering quotation notifications.
+- Payment review outcomes.
+- Dispatch and delivery notifications.
+- Customer support notifications.
+- Scheduled operational summaries.
+
+Implement an outbox or durable queue with:
+- Unique event identifiers.
+- Delivery status.
+- Retry count.
+- Next retry time.
+- Error classification.
+- Idempotency protection.
+- Dead-letter or manual-review handling.
+
+If Apps Script quotas or execution limits prevent reliable processing, queue and retry safely rather than silently dropping events.
+
+Keep credentials in protected configuration. Do not place private tokens in publicly shared spreadsheets or client-side code.
+
+Email failures must not corrupt orders or mark payments incorrectly.
+
+---
+
+## 22. SECURITY, PRIVACY AND ABUSE PREVENTION
+
+Implement:
+- Input validation and output encoding.
+- Server-side authorization.
+- Secure session and cookie configuration.
+- Rate limiting on sensitive endpoints.
+- CSRF protection where applicable.
+- Safe file uploads and file-type validation.
+- Private storage policies for receipts and sensitive uploads.
+- Payment webhook signature verification.
+- Server-side payment status verification.
+- Safe error handling.
+- Audit logs for privileged changes.
+- Secure environment variable management.
+- Protection against identifier-based data access.
+- Data minimization and appropriate retention.
+- Appropriate privacy and notification consent controls.
+
+Do not log passwords, authentication tokens, payment secrets or complete sensitive payment evidence.
+
+Treat map addresses, coordinates, recipient contact details and customer order histories as private data.
+
+Make administrative actions auditable and reversible where reasonable.
+
+---
+
+## 23. PERFORMANCE, ACCESSIBILITY AND SEO
+
+Implement:
+- Responsive mobile-first layouts.
+- Optimized and appropriately sized images.
+- Lazy loading where suitable.
+- Database pagination for large lists.
+- Efficient queries and indexes.
+- Caching with safe invalidation.
+- Accessible labels, focus management and keyboard interaction.
+- Semantic HTML and appropriate contrast.
+- Reduced-motion support.
+- SEO metadata and social sharing metadata.
+- Appropriate structured data when accurate.
+- Useful error boundaries and loading states.
+- Secure, crawlable public content and protected private routes.
+
+Do not allow animations, maps or popup campaigns to interfere with checkout, accessibility or mobile performance.
+
+---
+
+## 24. TESTING AND ACCEPTANCE CRITERIA
+
+Create appropriate unit, integration and end-to-end tests.
+
+### Menu and pricing
+- Exactly one staple can be selected for Palava Sauce and Vegetable Stew.
+- Portion selection is required.
+- Correct variant pricing is calculated on the server.
+- Jollof egg and chicken options use the correct prices.
+- Rice Balls uses its configured price.
+- Invalid and unavailable combinations are rejected.
+- Cart, checkout, WhatsApp text and order records retain the exact meal configuration.
+
+### Delivery
+- Customers can select and move a map pin.
+- Confirmation and editing work correctly.
+- Unconfirmed locations cannot pass the delivery checkout requirement.
+- Manual address fallback works.
+- Pickup does not require a delivery address.
+- Delivery coverage and fees are validated on the server.
+- Accra orders follow the configured service and capacity rules.
+- Historical order addresses are preserved.
+
+### Packages and catering
+- Minimum and maximum quantities are enforced.
+- Quotes remain pending until authorized approval.
+- Accepted quotations preserve their agreed prices.
+- Capacity and booking deadlines are enforced.
+- Deposits and balances are recorded correctly.
+- Recurring schedules do not create duplicate orders.
+
+### Meal gifting
+- Purchaser and recipient information remain distinct.
+- Recipients are not charged again for paid orders.
+- Gift messages and price-hiding preferences work.
+- Multiple destinations are validated independently where supported.
+- Payment and delivery statuses remain separate.
+
+### Currency
+- Conversion calculations and rounding are correct.
+- Rates include source and timestamp.
+- Stale or missing rates trigger a safe fallback.
+- Historical order prices do not change when exchange rates update.
+- Foreign-currency payment is offered only when genuinely supported.
+
+### Payments
+- Pending, successful, failed, refunded and reviewed-manual-payment states work.
+- Invalid webhook signatures are rejected.
+- Duplicate webhook events do not double-credit orders.
+- Receipt uploads never automatically prove payment.
+- Browser redirects alone cannot establish successful payment.
+
+### Reminders and notifications
+- Scheduled reminders use the correct timezone.
+- Popups advertise the exact configured meal and variant.
+- Current prices and availability are displayed.
+- Dismissal, snooze, opt-out and frequency caps work.
+- Duplicate scheduled jobs do not send duplicate campaigns.
+- Notification failures do not corrupt order records.
+
+### Permissions and privacy
+- Unauthorized users cannot access protected admin or dispatch routes.
+- API endpoints enforce authorization.
+- Customers cannot view other customers' orders.
+- Staff permissions are enforced server-side.
+- Sensitive integration secrets are not exposed in browser bundles or logs.
+
+### Engineering checks
+
+Run the checks supported by the actual project, including:
+- Lint.
+- Type checking.
+- Unit tests.
+- Integration tests.
+- End-to-end tests.
+- Production build.
+- Migration checks.
+- Relevant dependency and security checks.
+
+Fix failures caused by the changes before reporting completion.
+
+---
+
+## 25. IMPLEMENTATION PHASES
+
+### Phase 1 — Audit and stabilization
+Inspect the existing application, identify working features and failures, establish a baseline, protect existing data and create a prioritized worklog.
+
+### Phase 2 — Core storefront and menu
+Complete the responsive storefront, correct menu variants, server-side pricing, cart and standard checkout.
+
+### Phase 3 — Delivery and location
+Implement map-pin selection, confirmation, manual fallback, delivery zones, fees and serviceability checks.
+
+### Phase 4 — Payments and currency
+Complete supported payment integrations, manual receipt review, transaction verification and real exchange-rate conversion.
+
+### Phase 5 — Service packages and gifting
+Implement catering packages, bulk quotations, recurring orders and pay-for-someone-else workflows.
+
+### Phase 6 — Dispatch and notifications
+Implement dispatch operations, delivery tracking, meal reminders, relevant popups and reliable notification processing.
+
+### Phase 7 — Administration and analytics
+Complete staff permissions, settings, editable website content, blog management, reports and audit logs.
+
+### Phase 8 — Production hardening
+Complete security review, accessibility, performance, recovery documentation, regression tests and deployment preparation.
+
+Adapt the order if the initial audit reveals dependencies or existing implementations that make another sequence safer.
+
+---
+
+## 26. DEPLOYMENT AND OPERATIONS
+
+Provide:
+- A complete `.env.example` without real secrets.
+- Local development instructions.
+- Database migration and seed instructions.
+- Payment-provider configuration instructions.
+- Map and geocoding configuration.
+- Exchange-rate provider configuration.
+- Apps Script setup and authorization instructions.
+- Staff enrollment and initial superadmin setup.
+- Build and deployment instructions.
+- Backup and restore procedures.
+- Troubleshooting steps.
+- Health checks and operational logging.
+- Clear separation between development, staging and production.
+
+Never overwrite a working environment file automatically. If first-run configuration generation is appropriate, generate only missing settings, preserve existing valid values, use secure random secrets, restrict permissions and avoid printing secrets.
+
+Document any recurring provider limits, optional costs or production requirements.
+
+---
+
+## 27. REQUIRED DEVELOPER DELIVERABLES
+
+Before implementation:
+1. Repository audit.
+2. Existing-feature inventory.
+3. Identified bugs and risks.
+4. Proposed implementation plan.
+5. Data-preservation and migration plan.
+
+During implementation:
+1. Working code changes.
+2. Reviewed database migrations.
+3. Automated tests.
+4. Updated environment documentation.
+5. Updated worklog with verified progress.
+
+At completion:
+1. Summary of actual features implemented.
+2. Files and modules changed.
+3. Database changes and migration status.
+4. Test commands and their actual results.
+5. Production build result.
+6. Integrations verified against real services.
+7. Credentials or configuration still required.
+8. Known limitations and remaining work.
+9. Backup, deployment and rollback instructions.
+
+Do not claim the application is production-ready while critical payment, security, database, order or delivery workflows remain unverified.
+
+## FINAL EXECUTION DIRECTIVE
+
+Start by inspecting the existing NAREX Foods repository and reporting the actual state. Then implement the highest-priority missing or broken workflow in the existing codebase, verify it, and continue through the phases.
+
+Build a coherent, commercially useful application—not a disconnected collection of attractive screens. Every important button must perform its stated action; every order must preserve its exact menu configuration; every price must be validated; every payment must be verified; every delivery must respect serviceability and capacity; every privileged action must be authorized; and every completed feature must have evidence of testing.
+
+Preserve existing working functionality, prioritize reliability over unnecessary complexity, and report progress truthfully.

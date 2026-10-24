@@ -1,0 +1,690 @@
+     1→"use client";
+     2→
+     3→/** System: store controls, brand/contact/hours, payments config, integrations, outbox, audit log. */
+     4→
+     5→import { useCallback, useEffect, useState } from "react";
+     6→import { toast } from "sonner";
+     7→import {
+     8→  Clock3,
+     9→  CreditCard,
+    10→  MailWarning,
+    11→  Save,
+    12→  Search,
+    13→  Send,
+    14→  ShieldAlert,
+    15→  Store,
+    16→} from "lucide-react";
+    17→import { formatDate } from "@/components/admin/admin-utils";
+    18→import type { AuditDTO, OutboxDTO } from "@/lib/types";
+    19→import type { SiteSettings } from "@/lib/settings";
+    20→import { useAdminApi } from "@/components/admin/admin-context";
+    21→import { OutboxStatusBadge, PesewasInput, SkeletonRows } from "@/components/admin/admin-utils";
+    22→import { Badge } from "@/components/ui/badge";
+    23→import { Button } from "@/components/ui/button";
+    24→import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+    25→import { Input } from "@/components/ui/input";
+    26→import { Label } from "@/components/ui/label";
+    27→import { Switch } from "@/components/ui/switch";
+    28→import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+    29→import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+    30→import { Textarea } from "@/components/ui/textarea";
+    31→import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+    32→
+    33→interface Integrations {
+    34→  paystack: { enabled: boolean; secretConfigured: boolean; publicKey?: string; ready: boolean };
+    35→  zenobank: { enabled: boolean; ready: boolean; note: string };
+    36→  emailBridge: { configured: boolean; pending: number; failed: number; sent: number; bridgeConfigured?: boolean };
+    37→}
+    38→
+    39→const DAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"] as const;
+    40→
+    41→export function SystemModule() {
+    42→  return (
+    43→    <Tabs defaultValue="store" className="space-y-4">
+    44→      <TabsList>
+    45→        <TabsTrigger value="store">Store & ordering</TabsTrigger>
+    46→        <TabsTrigger value="brand">Brand & contact</TabsTrigger>
+    47→        <TabsTrigger value="payments">Payments</TabsTrigger>
+    48→        <TabsTrigger value="integrations">Integrations</TabsTrigger>
+    49→        <TabsTrigger value="outbox">Notifications</TabsTrigger>
+    50→        <TabsTrigger value="audit">Audit log</TabsTrigger>
+    51→      </TabsList>
+    52→      <TabsContent value="store"><StoreSettingsTab /></TabsContent>
+    53→      <TabsContent value="brand"><BrandTab /></TabsContent>
+    54→      <TabsContent value="payments"><PaymentsTab /></TabsContent>
+    55→      <TabsContent value="integrations"><IntegrationsTab /></TabsContent>
+    56→      <TabsContent value="outbox"><OutboxTab /></TabsContent>
+    57→      <TabsContent value="audit"><AuditTab /></TabsContent>
+    58→    </Tabs>
+    59→  );
+    60→}
+    61→
+    62→function useSettings() {
+    63→  const { get } = useAdminApi();
+    64→  const [settings, setSettings] = useState<SiteSettings | null>(null);
+    65→  const [integrations, setIntegrations] = useState<Integrations | null>(null);
+    66→  const [loading, setLoading] = useState(true);
+    67→
+    68→  const load = useCallback(async () => {
+    69→    const res = await get<{ settings: SiteSettings; integrations: Integrations }>("/api/admin/settings");
+    70→    if (res) {
+    71→      setSettings(res.settings);
+    72→      setIntegrations(res.integrations);
+    73→    }
+    74→    setLoading(false);
+    75→  }, [get]);
+    76→
+    77→  useEffect(() => {
+    78→    let cancelled = false;
+    79→    (async () => {
+    80→      const res = await get<{ settings: SiteSettings; integrations: Integrations }>("/api/admin/settings");
+    81→      if (!cancelled) {
+    82→        if (res) {
+    83→          setSettings(res.settings);
+    84→          setIntegrations(res.integrations);
+    85→        }
+    86→        setLoading(false);
+    87→      }
+    88→    })();
+    89→    return () => {
+    90→      cancelled = true;
+    91→    };
+    92→  }, [get]);
+    93→
+    94→  return { settings, integrations, loading, load };
+    95→}
+    96→
+    97→// ---------------- Store & ordering ----------------
+    98→
+    99→function StoreSettingsTab() {
+   100→  const { settings, loading, load } = useSettings();
+   101→  const { send } = useAdminApi();
+   102→  const [orderingEnabled, setOrderingEnabled] = useState(true);
+   103→  const [pauseNote, setPauseNote] = useState("");
+   104→  const [deliveryEnabled, setDeliveryEnabled] = useState(true);
+   105→  const [baseFee, setBaseFee] = useState<number | null>(0);
+   106→  const [freeOver, setFreeOver] = useState<number | null>(null);
+   107→  const [areas, setAreas] = useState("");
+   108→  const [deliveryNote, setDeliveryNote] = useState("");
+   109→  const [saving, setSaving] = useState(false);
+   110→  // Tracks which settings snapshot the form was hydrated from; a fresh fetch re-hydrates.
+   111→  const [hydratedFrom, setHydratedFrom] = useState<SiteSettings | null>(null);
+   112→
+   113→  if (settings && settings !== hydratedFrom) {
+   114→    setHydratedFrom(settings);
+   115→    setOrderingEnabled(settings.ordering.enabled);
+   116→    setPauseNote(settings.ordering.pauseNote);
+   117→    setDeliveryEnabled(settings.delivery.enabled);
+   118→    setBaseFee(settings.delivery.baseFee);
+   119→    setFreeOver(settings.delivery.freeOver);
+   120→    setAreas(settings.delivery.areas.join(", "));
+   121→    setDeliveryNote(settings.delivery.note);
+   122→  }
+   123→
+   124→  async function save() {
+   125→    setSaving(true);
+   126→    const res = await send<{ settings: SiteSettings }>("/api/admin/settings", "PUT", {
+   127→      ordering: { enabled: orderingEnabled, pauseNote },
+   128→      delivery: {
+   129→        enabled: deliveryEnabled,
+   130→        baseFee: baseFee ?? 0,
+   131→        freeOver: freeOver,
+   132→        areas: areas.split(",").map((a) => a.trim()).filter(Boolean),
+   133→        note: deliveryNote,
+   134→      },
+   135→    });
+   136→    setSaving(false);
+   137→    if (res) {
+   138→      toast.success("Store settings saved.");
+   139→      await load();
+   140→    }
+   141→  }
+   142→
+   143→  if (loading && !settings) return <CardSkeleton rows={6} />;
+   144→
+   145→  return (
+   146→    <div className="grid gap-4 xl:grid-cols-2">
+   147→      <Card className="rounded-2xl shadow-sm">
+   148→        <CardHeader>
+   149→          <CardTitle className="font-display flex items-center gap-2 text-base"><Store className="h-4 w-4 text-forest" /> Online ordering</CardTitle>
+   150→          <CardDescription>Pause checkout during rush hours or stock shortages.</CardDescription>
+   151→        </CardHeader>
+   152→        <CardContent className="space-y-3">
+   153→          <div className="flex items-center justify-between rounded-xl border border-border p-3">
+   154→            <div>
+   155→              <Label>Ordering enabled</Label>
+   156→              <p className="text-xs text-muted-foreground">When off, the storefront shows the pause notice.</p>
+   157→            </div>
+   158→            <Switch checked={orderingEnabled} onCheckedChange={setOrderingEnabled} aria-label="Toggle ordering" />
+   159→          </div>
+   160→          <div className="space-y-1.5">
+   161→            <Label htmlFor="pause-note">Pause notice</Label>
+   162→            <Textarea id="pause-note" value={pauseNote} onChange={(e) => setPauseNote(e.target.value)} rows={2} />
+   163→          </div>
+   164→        </CardContent>
+   165→      </Card>
+   166→
+   167→      <Card className="rounded-2xl shadow-sm">
+   168→        <CardHeader>
+   169→          <CardTitle className="font-display text-base">Delivery</CardTitle>
+   170→          <CardDescription>Fees are whole cedis×100 (pesewas) under the hood.</CardDescription>
+   171→        </CardHeader>
+   172→        <CardContent className="space-y-3">
+   173→          <div className="flex items-center justify-between rounded-xl border border-border p-3">
+   174→            <div>
+   175→              <Label>Delivery enabled</Label>
+   176→              <p className="text-xs text-muted-foreground">Customers only see delivery when this is on.</p>
+   177→            </div>
+   178→            <Switch checked={deliveryEnabled} onCheckedChange={setDeliveryEnabled} aria-label="Toggle delivery" />
+   179→          </div>
+   180→          <div className="grid gap-3 sm:grid-cols-2">
+   181→            <div className="space-y-1.5">
+   182→              <Label>Base fee</Label>
+   183→              <PesewasInput value={baseFee} onChange={setBaseFee} />
+   184→            </div>
+   185→            <div className="space-y-1.5">
+   186→              <Label>Free delivery over (blank = never)</Label>
+   187→              <PesewasInput value={freeOver} onChange={setFreeOver} placeholder="none" />
+   188→            </div>
+   189→          </div>
+   190→          <div className="space-y-1.5">
+   191→            <Label htmlFor="d-areas">Service areas (comma-separated)</Label>
+   192→            <Input id="d-areas" value={areas} onChange={(e) => setAreas(e.target.value)} placeholder="Mampong-Akuapem, Akropong, Aburi" />
+   193→          </div>
+   194→          <div className="space-y-1.5">
+   195→            <Label htmlFor="d-note">Delivery note</Label>
+   196→            <Input id="d-note" value={deliveryNote} onChange={(e) => setDeliveryNote(e.target.value)} />
+   197→          </div>
+   198→        </CardContent>
+   199→      </Card>
+   200→
+   201→      <div className="xl:col-span-2">
+   202→        <Button onClick={() => void save()} disabled={saving} className="bg-forest text-cream hover:bg-[#23503E]">
+   203→          <Save className="h-4 w-4" /> {saving ? "Saving…" : "Save store settings"}
+   204→        </Button>
+   205→      </div>
+   206→    </div>
+   207→  );
+   208→}
+   209→
+   210→// ---------------- Brand & contact ----------------
+   211→
+   212→function BrandTab() {
+   213→  const { settings, loading, load } = useSettings();
+   214→  const { send } = useAdminApi();
+   215→  const [name, setName] = useState("");
+   216→  const [tagline, setTagline] = useState("");
+   217→  const [phone, setPhone] = useState("");
+   218→  const [whatsapp, setWhatsapp] = useState("");
+   219→  const [email, setEmail] = useState("");
+   220→  const [address, setAddress] = useState("");
+   221→  const [hours, setHours] = useState<Record<string, string>>({});
+   222→  const [saving, setSaving] = useState(false);
+   223→  // Tracks which settings snapshot the form was hydrated from; a fresh fetch re-hydrates.
+   224→  const [hydratedFrom, setHydratedFrom] = useState<SiteSettings | null>(null);
+   225→
+   226→  if (settings && settings !== hydratedFrom) {
+   227→    setHydratedFrom(settings);
+   228→    setName(settings.brand.name);
+   229→    setTagline(settings.brand.tagline);
+   230→    setPhone(settings.contact.phone);
+   231→    setWhatsapp(settings.contact.whatsapp);
+   232→    setEmail(settings.contact.email);
+   233→    setAddress(settings.contact.address);
+   234→    setHours({ ...settings.hours });
+   235→  }
+   236→
+   237→  async function save() {
+   238→    setSaving(true);
+   239→    const res = await send<{ settings: SiteSettings }>("/api/admin/settings", "PUT", {
+   240→      brand: { name: name.trim() || "NAREX Foods", tagline },
+   241→      contact: { phone, whatsapp, email, address },
+   242→      hours,
+   243→    });
+   244→    setSaving(false);
+   245→    if (res) {
+   246→      toast.success("Brand, contact and hours saved.");
+   247→      await load();
+   248→    }
+   249→  }
+   250→
+   251→  if (loading && !settings) return <CardSkeleton rows={6} />;
+   252→
+   253→  return (
+   254→    <div className="grid gap-4 xl:grid-cols-2">
+   255→      <Card className="rounded-2xl shadow-sm">
+   256→        <CardHeader>
+   257→          <CardTitle className="font-display text-base">Brand</CardTitle>
+   258→        </CardHeader>
+   259→        <CardContent className="space-y-3">
+   260→          <div className="space-y-1.5">
+   261→            <Label htmlFor="b-name">Name</Label>
+   262→            <Input id="b-name" value={name} onChange={(e) => setName(e.target.value)} />
+   263→          </div>
+   264→          <div className="space-y-1.5">
+   265→            <Label htmlFor="b-tag">Tagline</Label>
+   266→            <Input id="b-tag" value={tagline} onChange={(e) => setTagline(e.target.value)} />
+   267→          </div>
+   268→        </CardContent>
+   269→      </Card>
+   270→
+   271→      <Card className="rounded-2xl shadow-sm">
+   272→        <CardHeader>
+   273→          <CardTitle className="font-display text-base">Contact</CardTitle>
+   274→          <CardDescription>Shown in the storefront footer and on WhatsApp handoff.</CardDescription>
+   275→        </CardHeader>
+   276→        <CardContent className="grid gap-3 sm:grid-cols-2">
+   277→          <div className="space-y-1.5">
+   278→            <Label htmlFor="c-phone">Phone</Label>
+   279→            <Input id="c-phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
+   280→          </div>
+   281→          <div className="space-y-1.5">
+   282→            <Label htmlFor="c-wa">WhatsApp</Label>
+   283→            <Input id="c-wa" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} />
+   284→          </div>
+   285→          <div className="space-y-1.5">
+   286→            <Label htmlFor="c-email">Email</Label>
+   287→            <Input id="c-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+   288→          </div>
+   289→          <div className="space-y-1.5">
+   290→            <Label htmlFor="c-addr">Address</Label>
+   291→            <Input id="c-addr" value={address} onChange={(e) => setAddress(e.target.value)} />
+   292→          </div>
+   293→        </CardContent>
+   294→      </Card>
+   295→
+   296→      <Card className="rounded-2xl shadow-sm xl:col-span-2">
+   297→        <CardHeader>
+   298→          <CardTitle className="font-display flex items-center gap-2 text-base"><Clock3 className="h-4 w-4 text-forest" /> Opening hours</CardTitle>
+   299→        </CardHeader>
+   300→        <CardContent>
+   301→          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+   302→            {DAYS.map((day) => (
+   303→              <div key={day} className="space-y-1.5">
+   304→                <Label htmlFor={`h-${day}`} className="capitalize">{day}</Label>
+   305→                <Input id={`h-${day}`} value={hours[day] ?? ""} onChange={(e) => setHours((h) => ({ ...h, [day]: e.target.value }))} placeholder="08:00 – 18:00" />
+   306→              </div>
+   307→            ))}
+   308→          </div>
+   309→        </CardContent>
+   310→      </Card>
+   311→
+   312→      <div className="xl:col-span-2">
+   313→        <Button onClick={() => void save()} disabled={saving} className="bg-forest text-cream hover:bg-[#23503E]">
+   314→          <Save className="h-4 w-4" /> {saving ? "Saving…" : "Save brand & contact"}
+   315→        </Button>
+   316→      </div>
+   317→    </div>
+   318→  );
+   319→}
+   320→
+   321→// ---------------- Payments ----------------
+   322→
+   323→function PaymentsTab() {
+   324→  const { settings, loading, load } = useSettings();
+   325→  const { send } = useAdminApi();
+   326→  const [manualEnabled, setManualEnabled] = useState(true);
+   327→  const [recipientName, setRecipientName] = useState("");
+   328→  const [method, setMethod] = useState("");
+   329→  const [details, setDetails] = useState("");
+   330→  const [instructions, setInstructions] = useState("");
+   331→  const [paystackEnabled, setPaystackEnabled] = useState(false);
+   332→  const [publicKey, setPublicKey] = useState("");
+   333→  const [saving, setSaving] = useState(false);
+   334→  // Tracks which settings snapshot the form was hydrated from; a fresh fetch re-hydrates.
+   335→  const [hydratedFrom, setHydratedFrom] = useState<SiteSettings | null>(null);
+   336→
+   337→  if (settings && settings !== hydratedFrom) {
+   338→    setHydratedFrom(settings);
+   339→    setManualEnabled(settings.payments.manual.enabled);
+   340→    setRecipientName(settings.payments.manual.recipientName);
+   341→    setMethod(settings.payments.manual.method);
+   342→    setDetails(settings.payments.manual.details);
+   343→    setInstructions(settings.payments.manual.instructions);
+   344→    setPaystackEnabled(settings.payments.paystack.enabled);
+   345→    setPublicKey(settings.payments.paystack.publicKey ?? "");
+   346→  }
+   347→
+   348→  async function save() {
+   349→    setSaving(true);
+   350→    const res = await send<{ settings: SiteSettings }>("/api/admin/settings", "PUT", {
+   351→      payments: {
+   352→        manual: { enabled: manualEnabled, recipientName, method, details, instructions },
+   353→        paystack: { enabled: paystackEnabled, publicKey },
+   354→      },
+   355→    });
+   356→    setSaving(false);
+   357→    if (res) {
+   358→      toast.success("Payment settings saved.");
+   359→      await load();
+   360→    }
+   361→  }
+   362→
+   363→  if (loading && !settings) return <CardSkeleton rows={6} />;
+   364→
+   365→  return (
+   366→    <div className="grid gap-4 xl:grid-cols-2">
+   367→      <Card className="rounded-2xl shadow-sm">
+   368→        <CardHeader>
+   369→          <CardTitle className="font-display flex items-center gap-2 text-base"><CreditCard className="h-4 w-4 text-forest" /> Manual / mobile money</CardTitle>
+   370→          <CardDescription>Customers transfer, then upload evidence for staff review.</CardDescription>
+   371→        </CardHeader>
+   372→        <CardContent className="space-y-3">
+   373→          <div className="flex items-center justify-between rounded-xl border border-border p-3">
+   374→            <Label>Accept manual payments</Label>
+   375→            <Switch checked={manualEnabled} onCheckedChange={setManualEnabled} aria-label="Toggle manual payments" />
+   376→          </div>
+   377→          <div className="grid gap-3 sm:grid-cols-2">
+   378→            <div className="space-y-1.5">
+   379→              <Label htmlFor="pm-name">Account name</Label>
+   380→              <Input id="pm-name" value={recipientName} onChange={(e) => setRecipientName(e.target.value)} />
+   381→            </div>
+   382→            <div className="space-y-1.5">
+   383→              <Label htmlFor="pm-method">Method label</Label>
+   384→              <Input id="pm-method" value={method} onChange={(e) => setMethod(e.target.value)} placeholder="Mobile Money (MTN)" />
+   385→            </div>
+   386→          </div>
+   387→          <div className="space-y-1.5">
+   388→            <Label htmlFor="pm-details">Payment details</Label>
+   389→            <Input id="pm-details" value={details} onChange={(e) => setDetails(e.target.value)} placeholder="MTN MoMo · 0559291195 · NAREX Foods" />
+   390→          </div>
+   391→          <div className="space-y-1.5">
+   392→            <Label htmlFor="pm-instr">Customer instructions</Label>
+   393→            <Textarea id="pm-instr" value={instructions} onChange={(e) => setInstructions(e.target.value)} rows={4} />
+   394→          </div>
+   395→        </CardContent>
+   396→      </Card>
+   397→
+   398→      <Card className="rounded-2xl shadow-sm">
+   399→        <CardHeader>
+   400→          <CardTitle className="font-display text-base">Paystack</CardTitle>
+   401→          <CardDescription>Card &amp; mobile money checkout. The secret key lives in server env only.</CardDescription>
+   402→        </CardHeader>
+   403→        <CardContent className="space-y-3">
+   404→          <div className="flex items-center justify-between rounded-xl border border-border p-3">
+   405→            <Label>Paystack enabled</Label>
+   406→            <Switch checked={paystackEnabled} onCheckedChange={setPaystackEnabled} aria-label="Toggle Paystack" />
+   407→          </div>
+   408→          <div className="space-y-1.5">
+   409→            <Label htmlFor="ps-pub">Public key</Label>
+   410→            <Input id="ps-pub" value={publicKey} onChange={(e) => setPublicKey(e.target.value)} placeholder="pk_test_…" className="font-mono text-xs" />
+   411→          </div>
+   412→          <p className="rounded-xl bg-muted/50 p-3 text-xs leading-relaxed text-muted-foreground">
+   413→            Enable Paystack only after the secret key (<code className="font-mono">PAYSTACK_SECRET_KEY</code>) is configured on the server —
+   414→            the readiness card on the Integrations tab confirms it. Secret keys are never stored in settings or returned to the browser.
+   415→          </p>
+   416→        </CardContent>
+   417→      </Card>
+   418→
+   419→      <div className="xl:col-span-2">
+   420→        <Button onClick={() => void save()} disabled={saving} className="bg-forest text-cream hover:bg-[#23503E]">
+   421→          <Save className="h-4 w-4" /> {saving ? "Saving…" : "Save payment settings"}
+   422→        </Button>
+   423→      </div>
+   424→    </div>
+   425→  );
+   426→}
+   427→
+   428→// ---------------- Integrations ----------------
+   429→
+   430→function IntegrationsTab() {
+   431→  const { integrations, loading } = useSettings();
+   432→
+   433→  if (loading && !integrations) return <CardSkeleton rows={3} />;
+   434→  if (!integrations) return null;
+   435→
+   436→  const cards = [
+   437→    {
+   438→      title: "Paystack",
+   439→      icon: CreditCard,
+   440→      ready: integrations.paystack.ready,
+   441→      rows: [
+   442→        ["Enabled", integrations.paystack.enabled ? "yes" : "no"],
+   443→        ["Secret key on server", integrations.paystack.secretConfigured ? "yes" : "not configured"],
+   444→        ["Ready for checkout", integrations.paystack.ready ? "yes" : "no"],
+   445→      ] as [string, string][],
+   446→    },
+   447→    {
+   448→      title: "Zenobank",
+   449→      icon: ShieldAlert,
+   450→      ready: false,
+   451→      rows: [["Status", "awaiting credentials"], ["Note", integrations.zenobank.note]] as [string, string][],
+   452→    },
+   453→    {
+   454→      title: "Email bridge",
+   455→      icon: MailWarning,
+   456→      ready: integrations.emailBridge.configured,
+   457→      rows: [
+   458→        ["Bridge URL configured", integrations.emailBridge.configured ? "yes" : "no"],
+   459→        ["Pending", String(integrations.emailBridge.pending)],
+   460→        ["Failed", String(integrations.emailBridge.failed)],
+   461→        ["Sent", String(integrations.emailBridge.sent)],
+   462→      ] as [string, string][],
+   463→    },
+   464→  ];
+   465→
+   466→  return (
+   467→    <div className="grid gap-4 md:grid-cols-3">
+   468→      {cards.map((c) => (
+   469→        <Card key={c.title} className="rounded-2xl shadow-sm">
+   470→          <CardHeader className="pb-2">
+   471→            <CardTitle className="flex items-center justify-between text-base">
+   472→              <span className="flex items-center gap-2"><c.icon className="h-4 w-4 text-forest" /> {c.title}</span>
+   473→              <Badge variant="outline" className={c.ready ? "border-green-300 bg-green-50 text-green-800" : "border-amber-300 bg-amber-50 text-amber-900"}>
+   474→                {c.ready ? "ready" : "pending"}
+   475→              </Badge>
+   476→            </CardTitle>
+   477→          </CardHeader>
+   478→          <CardContent>
+   479→            <dl className="space-y-2 text-sm">
+   480→              {c.rows.map(([k, v]) => (
+   481→                <div key={k} className="flex justify-between gap-3">
+   482→                  <dt className="text-muted-foreground">{k}</dt>
+   483→                  <dd className="text-right font-medium">{v}</dd>
+   484→                </div>
+   485→              ))}
+   486→            </dl>
+   487→          </CardContent>
+   488→        </Card>
+   489→      ))}
+   490→    </div>
+   491→  );
+   492→}
+   493→
+   494→// ---------------- Outbox ----------------
+   495→
+   496→function OutboxTab() {
+   497→  const { get, send } = useAdminApi();
+   498→  const [items, setItems] = useState<OutboxDTO[] | null>(null);
+   499→  const [loading, setLoading] = useState(true);
+   500→  const [draining, setDraining] = useState(false);
+   501→
+   502→  const load = useCallback(async () => {
+   503→    const res = await get<{ health: { pending: number; failed: number; sent: number }; items: OutboxDTO[] }>("/api/admin/notifications");
+   504→    if (res) setItems(res.items);
+   505→    setLoading(false);
+   506→  }, [get]);
+   507→
+   508→  useEffect(() => {
+   509→    let cancelled = false;
+   510→    (async () => {
+   511→      const res = await get<{ health: { pending: number; failed: number; sent: number }; items: OutboxDTO[] }>("/api/admin/notifications");
+   512→      if (!cancelled) {
+   513→        if (res) setItems(res.items);
+   514→        setLoading(false);
+   515→      }
+   516→    })();
+   517→    return () => {
+   518→      cancelled = true;
+   519→    };
+   520→  }, [get]);
+   521→
+   522→  async function drain() {
+   523→    setDraining(true);
+   524→    const res = await send<{ success: boolean; sent?: number; failed?: number; message?: string }>("/api/admin/settings", "POST");
+   525→    setDraining(false);
+   526→    if (res) {
+   527→      if (res.success) toast.success(`Outbox drained — ${res.sent ?? 0} sent, ${res.failed ?? 0} failed.`);
+   528→      else toast.info(res.message ?? "Nothing to send.");
+   529→      await load();
+   530→    }
+   531→  }
+   532→
+   533→  return (
+   534→    <div className="space-y-4">
+   535→      <div className="flex flex-wrap items-center justify-between gap-3">
+   536→        <p className="text-sm text-muted-foreground">Every customer email is queued here first — ordering never blocks on delivery.</p>
+   537→        <Button onClick={() => void drain()} disabled={draining} className="bg-forest text-cream hover:bg-[#23503E]">
+   538→          <Send className="h-4 w-4" /> {draining ? "Sending…" : "Drain outbox now"}
+   539→        </Button>
+   540→      </div>
+   541→      <div className="rounded-2xl border border-border bg-card shadow-sm">
+   542→        {loading && !items ? (
+   543→          <div className="p-4"><SkeletonRows rows={5} /></div>
+   544→        ) : (items ?? []).length === 0 ? (
+   545→          <p className="p-6 text-center text-sm text-muted-foreground">Outbox is empty.</p>
+   546→        ) : (
+   547→          <div className="max-h-[62vh] overflow-auto">
+   548→            <Table className="min-w-[720px]">
+   549→              <TableHeader className="sticky top-0 z-10 bg-card/95 backdrop-blur">
+   550→                <TableRow>
+   551→                  <TableHead>Subject</TableHead>
+   552→                  <TableHead>Type</TableHead>
+   553→                  <TableHead>Recipient</TableHead>
+   554→                  <TableHead>Status</TableHead>
+   555→                  <TableHead className="text-center">Attempts</TableHead>
+   556→                  <TableHead>Created</TableHead>
+   557→                </TableRow>
+   558→              </TableHeader>
+   559→              <TableBody>
+   560→                {(items ?? []).map((i) => (
+   561→                  <TableRow key={i.id}>
+   562→                    <TableCell className="max-w-[260px] truncate font-medium">{i.subject}</TableCell>
+   563→                    <TableCell><Badge variant="outline" className="text-[11px]">{i.type}</Badge></TableCell>
+   564→                    <TableCell className="text-muted-foreground">{i.recipient ?? "—"}</TableCell>
+   565→                    <TableCell><OutboxStatusBadge status={i.status} /></TableCell>
+   566→                    <TableCell className="text-center">{i.attempts}</TableCell>
+   567→                    <TableCell className="whitespace-nowrap text-xs text-muted-foreground">{formatDate(i.createdAt)}</TableCell>
+   568→                  </TableRow>
+   569→                ))}
+   570→              </TableBody>
+   571→            </Table>
+   572→          </div>
+   573→        )}
+   574→      </div>
+   575→    </div>
+   576→  );
+   577→}
+   578→
+   579→// ---------------- Audit log ----------------
+   580→
+   581→function AuditTab() {
+   582→  const { get } = useAdminApi();
+   583→  const [events, setEvents] = useState<AuditDTO[] | null>(null);
+   584→  const [total, setTotal] = useState(0);
+   585→  const [page, setPage] = useState(1);
+   586→  const [actionFilter, setActionFilter] = useState("all");
+   587→  const [searchDraft, setSearchDraft] = useState("");
+   588→  const [loading, setLoading] = useState(true);
+   589→  const PAGE_SIZE = 25;
+   590→
+   591→  useEffect(() => {
+   592→    let cancelled = false;
+   593→    (async () => {
+   594→      const params = new URLSearchParams();
+   595→      params.set("page", String(page));
+   596→      params.set("pageSize", String(PAGE_SIZE));
+   597→      if (actionFilter !== "all") params.set("action", actionFilter);
+   598→      const res = await get<{ total: number; events: AuditDTO[] }>(`/api/admin/audit?${params.toString()}`);
+   599→      if (!cancelled) {
+   600→        if (res) {
+   601→          setEvents(res.events);
+   602→          setTotal(res.total);
+   603→        }
+   604→        setLoading(false);
+   605→      }
+   606→    })();
+   607→    return () => {
+   608→      cancelled = true;
+   609→    };
+   610→  }, [get, page, actionFilter]);
+   611→
+   612→  useEffect(() => {
+   613→    const t = setTimeout(() => setActionFilter(searchDraft.trim() || "all"), 350);
+   614→    return () => clearTimeout(t);
+   615→  }, [searchDraft]);
+   616→
+   617→  const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
+   618→
+   619→  return (
+   620→    <TooltipProvider>
+   621→      <div className="space-y-4">
+   622→        <div className="flex flex-wrap items-center gap-3">
+   623→          <div className="relative flex-1 sm:max-w-xs">
+   624→            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+   625→            <Input value={searchDraft} onChange={(e) => setSearchDraft(e.target.value)} placeholder="Filter by action e.g. payment.approve" className="pl-9" aria-label="Filter audit log" />
+   626→          </div>
+   627→          <p className="text-sm text-muted-foreground">{total.toLocaleString()} events</p>
+   628→        </div>
+   629→
+   630→        <div className="rounded-2xl border border-border bg-card shadow-sm">
+   631→          {loading && !events ? (
+   632→            <div className="p-4"><SkeletonRows rows={8} /></div>
+   633→          ) : (events ?? []).length === 0 ? (
+   634→            <p className="p-6 text-center text-sm text-muted-foreground">No audit events match.</p>
+   635→          ) : (
+   636→            <div className="max-h-[62vh] overflow-auto">
+   637→              <Table className="min-w-[720px]">
+   638→                <TableHeader className="sticky top-0 z-10 bg-card/95 backdrop-blur">
+   639→                  <TableRow>
+   640→                    <TableHead>Action</TableHead>
+   641→                    <TableHead>Actor</TableHead>
+   642→                    <TableHead>Target</TableHead>
+   643→                    <TableHead>When</TableHead>
+   644→                  </TableRow>
+   645→                </TableHeader>
+   646→                <TableBody>
+   647→                  {(events ?? []).map((e) => (
+   648→                    <TableRow key={e.id}>
+   649→                      <TableCell>
+   650→                        <Tooltip>
+   651→                          <TooltipTrigger asChild>
+   652→                            <Badge variant="outline" className="font-mono text-[11px]">{e.action}</Badge>
+   653→                          </TooltipTrigger>
+   654→                          {Object.keys(e.meta ?? {}).length > 0 ? (
+   655→                            <TooltipContent className="max-w-72 break-all text-xs">
+   656→                              <pre className="whitespace-pre-wrap font-mono">{JSON.stringify(e.meta, null, 1)}</pre>
+   657→                            </TooltipContent>
+   658→                          ) : null}
+   659→                        </Tooltip>
+   660→                      </TableCell>
+   661→                      <TableCell>{e.actor}</TableCell>
+   662→                      <TableCell className="max-w-[220px] truncate text-muted-foreground">{e.target ?? "—"}</TableCell>
+   663→                      <TableCell className="whitespace-nowrap text-xs text-muted-foreground">{formatDate(e.createdAt)}</TableCell>
+   664→                    </TableRow>
+   665→                  ))}
+   666→                </TableBody>
+   667→              </Table>
+   668→            </div>
+   669→          )}
+   670→          <div className="flex items-center justify-between border-t border-border px-4 py-3 text-sm">
+   671→            <span className="text-muted-foreground">Page {page} of {pageCount}</span>
+   672→            <div className="flex gap-2">
+   673→              <Button variant="outline" size="sm" disabled={page <= 1 || loading} onClick={() => setPage((p) => Math.max(1, p - 1))}>Prev</Button>
+   674→              <Button variant="outline" size="sm" disabled={page >= pageCount || loading} onClick={() => setPage((p) => p + 1)}>Next</Button>
+   675→            </div>
+   676→          </div>
+   677→        </div>
+   678→      </div>
+   679→    </TooltipProvider>
+   680→  );
+   681→}
+   682→
+   683→function CardSkeleton({ rows }: { rows: number }) {
+   684→  return (
+   685→    <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+   686→      <SkeletonRows rows={rows} />
+   687→    </div>
+   688→  );
+   689→}
+   690→

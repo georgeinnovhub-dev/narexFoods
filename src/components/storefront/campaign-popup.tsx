@@ -11,9 +11,21 @@ import type { CampaignDTO } from "@/lib/types";
 
 const OPEN_DELAY_MS = 1200;
 
+/* Meal-time targeting (spec §13) — computed after mount, so a mismatched
+   popup simply never opens for the rest of the session. */
+function mealTimeActive(mt: CampaignDTO["mealTime"]): boolean {
+  if (mt === "any") return true;
+  const now = new Date();
+  const mins = now.getHours() * 60 + now.getMinutes();
+  if (mt === "breakfast") return mins >= 6 * 60 && mins <= 10 * 60 + 30; // 06:00–10:30
+  if (mt === "lunch") return mins >= 11 * 60 + 30 && mins <= 14 * 60 + 30; // 11:30–14:30
+  return mins >= 17 * 60 && mins <= 21 * 60; // supper 17:00–21:00
+}
+
 export function CampaignPopup() {
   const bootstrap = useAppStore((s) => s.bootstrap);
   const navigate = useAppStore((s) => s.navigate);
+  const openProduct = useAppStore((s) => s.openProduct);
   const campaign = useMemo<CampaignDTO | null>(
     () => (bootstrap?.campaigns ?? []).find((c) => c.placement === "popup") ?? null,
     [bootstrap]
@@ -34,6 +46,7 @@ export function CampaignPopup() {
     }
     if (dismissed) return;
     const timer = setTimeout(() => {
+      if (!mealTimeActive(campaign.mealTime)) return;
       setShown(true);
       setOpen(true);
       void apiSend(`/api/campaigns/${encodeURIComponent(campaign.id)}/event`, "POST", { type: "impression" }).catch(
@@ -46,6 +59,10 @@ export function CampaignPopup() {
   if (!campaign) return null;
 
   const active: CampaignDTO = campaign;
+  /* Exact-meal campaigns (spec §13): open that exact dish with correct variant pricing. */
+  const exactProduct = active.productId
+    ? (bootstrap?.products.find((p) => p.id === active.productId) ?? null)
+    : null;
 
   const persistDismissal = () => {
     if (!active.showOnce) return;
@@ -73,6 +90,10 @@ export function CampaignPopup() {
     track("click");
     persistDismissal();
     setOpen(false);
+    if (exactProduct) {
+      openProduct(exactProduct.id);
+      return;
+    }
     const url = active.ctaUrl;
     if (url && /^https?:\/\//i.test(url)) {
       window.open(url, "_blank", "noopener,noreferrer");
@@ -101,7 +122,7 @@ export function CampaignPopup() {
             onClick={handleCta}
             className="min-h-11 w-full rounded-xl bg-forest font-semibold text-cream hover:bg-forest/90"
           >
-            {campaign.ctaLabel || "Order now"}
+            {active.ctaLabel || (exactProduct ? "Open dish" : "Order now")}
           </Button>
         </div>
       </DialogContent>

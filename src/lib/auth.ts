@@ -7,15 +7,20 @@ import {
   type SessionPayload,
 } from "@/lib/permissions";
 
-const SECRET =
-  process.env.AUTH_SECRET || "narex-dev-secret-change-in-production-iDe8";
+if (!process.env.AUTH_SECRET && process.env.NODE_ENV === "production") {
+  // Fail loudly at boot rather than shipping forgeable session tokens (spec §22).
+  throw new Error("AUTH_SECRET must be set in production");
+}
+
+const SECRET = process.env.AUTH_SECRET || "narex-dev-secret-change-in-production-iDe8";
 
 function sign(data: string): string {
   return createHmac("sha256", SECRET).update(data).digest("base64url");
 }
 
-export function createSessionToken(payload: Omit<SessionPayload, "exp">): string {
-  const full: SessionPayload = {
+/** Generic signed-token helpers shared by staff + customer sessions. */
+export function createSessionToken(payload: Omit<any, "exp">): string {
+  const full = {
     ...payload,
     exp: Math.floor(Date.now() / 1000) + SESSION_TTL_SECONDS,
   };
@@ -24,6 +29,10 @@ export function createSessionToken(payload: Omit<SessionPayload, "exp">): string
 }
 
 export function verifySessionToken(token: string): SessionPayload | null {
+  return verifySignedToken<SessionPayload>(token);
+}
+
+export function verifySignedToken<T>(token: string): T | null {
   const [body, sig] = token.split(".");
   if (!body || !sig) return null;
   const expected = sign(body);
@@ -31,7 +40,7 @@ export function verifySessionToken(token: string): SessionPayload | null {
   const b = Buffer.from(expected);
   if (a.length !== b.length || !timingSafeEqual(a, b)) return null;
   try {
-    const payload = JSON.parse(Buffer.from(body, "base64url").toString()) as SessionPayload;
+    const payload = JSON.parse(Buffer.from(body, "base64url").toString()) as T & { exp?: number };
     if (!payload.exp || payload.exp < Math.floor(Date.now() / 1000)) return null;
     return payload;
   } catch {

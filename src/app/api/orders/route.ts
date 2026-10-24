@@ -7,9 +7,12 @@ import { buildWhatsAppUrl } from "@/lib/whatsapp";
 import { notify } from "@/lib/outbox";
 import { logAudit } from "@/lib/audit";
 import { serializeOrder, ORDER_INCLUDE } from "@/lib/serialize";
+import { getCustomerSession } from "@/lib/customers";
 import type { CreateOrderResponse, OrderDTO } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
+
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 const checkoutSchema = z.object({
   idempotencyKey: z.string().min(8).max(100),
@@ -29,6 +32,18 @@ const checkoutSchema = z.object({
   customerPhone: z.string().min(9).max(15).regex(/^[0-9+\s-]+$/, "Enter a valid phone number"),
   customerEmail: z.string().email().max(120).optional().or(z.literal("")),
   address: z.string().max(300).optional().or(z.literal("")),
+  landmark: z.string().max(200).optional().or(z.literal("")),
+  addressLat: z.string().max(40).optional().or(z.literal("")),
+  addressLng: z.string().max(40).optional().or(z.literal("")),
+  locationConfirmed: z.boolean().optional().default(false),
+  scheduledDate: z.string().regex(DATE_RE, "Use a valid date").max(10).optional().or(z.literal("")),
+  scheduledTime: z.string().max(60).optional().or(z.literal("")),
+  // Gifting (spec §9)
+  isGift: z.boolean().optional().default(false),
+  recipientName: z.string().max(80).optional().or(z.literal("")),
+  recipientPhone: z.string().max(15).optional().or(z.literal("")),
+  giftMessage: z.string().max(300).optional().or(z.literal("")),
+  hidePrices: z.boolean().optional().default(false),
   note: z.string().max(500).optional().or(z.literal("")),
   couponCode: z.string().max(30).optional().or(z.literal("")),
 });
@@ -74,6 +89,33 @@ export async function POST(req: Request) {
       if (!data.address || data.address.trim().length < 5) {
         return fail("Please provide a delivery address.", 422);
       }
+      // Confirmed location is required (spec §6) — never silently accept an
+      // unconfirmed pin/address for delivery.
+      if (!data.locationConfirmed) {
+        return fail("Please confirm your delivery location before placing the order.", 422, {
+          locationUnconfirmed: true,
+        });
+      }
+    }
+
+    // Gifting validation (spec §9) — recipient details required for gifts
+    const isGift = Boolean(data.isGift && data.recipientName);
+    if (data.isGift) {
+      if (!data.recipientName || data.recipientName.trim().length < 2) {
+        return fail("Please enter the recipient's name for your gift order.", 422);
+      }
+      if (data.fulfillmentType === "delivery" && (!data.recipientPhone || data.recipientPhone.trim().length < 9)) {
+        return fail("Please enter the recipient's phone number so we can coordinate delivery.", 422);
+      }
+    }
+
+    // Delivery scheduling — must not be in the past
+    if (data.scheduledDate) {
+      const today = new Date();
+      const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+      if (data.scheduledDate < todayStr) {
+        return fail("Scheduled date cannot be in the past.", 422);
+      }
     }
 
     // Full server-side recalculation from DB truth — client prices never trusted
@@ -81,6 +123,7 @@ export async function POST(req: Request) {
       items: data.items,
       fulfillmentType: data.fulfillmentType,
       couponCode: data.couponCode || null,
+      address: data.fulfillmentType === "delivery" ? data.address : null,
     });
 
     if (priced.unavailable.length > 0) {
@@ -88,6 +131,41 @@ export async function POST(req: Request) {
     }
     if (priced.lines.length === 0) {
       return fail("Your cart is empty or items are unavailable.", 422);
+    }
+
+    // Zone validation (spec §7) — when zones exist, the address must match one
+    if (data.fulfillmentType === "delivery" && priced.zone === null) {
+      const zoneCount = await db.deliveryZone.count({ where: { active: true } });
+      if (zoneCount > 0) {
+        return fail(
+          "Your location is outside our current delivery zones. Please contact us on WhatsApp for a custom delivery arrangement.",
+          409,
+          { outsideZones: true }
+        );
+      }
+    }
+    if (priced.zone && priced.zone.requiresQuote) {
+      return fail(
+        priced.zone.note ||
+          "Deliveries to this area are arranged per order. Please contact us on WhatsApp for a quick confirmation.",
+        409,
+        { quoteRequired: true, zone: priced.zone.name }
+      );
+    }
+    if (priced.zone && priced.subtotal < priced.zone.minSubtotal) {
+      return fail(
+        `Orders to ${priced.zone.name} require a minimum subtotal of GH₵${(priced.zone.minSubtotal / 100).toFixed(2)}.`,
+        409,
+        { zoneMinSubtotal: priced.zone.minSubtotal }
+      );
+    }
+
+    // Attach a signed-in customer (guest checkout stays supported)
+    const customerSession = await getCustomerSession();
+    let customerId: string | null = null;
+    if (customerSession) {
+      const customer = await db.customer.findUnique({ where: { id: customerSession.customerId } });
+      if (customer && customer.status === "active") customerId = customer.id;
     }
 
     const reference = generateOrderReference();
@@ -104,7 +182,19 @@ export async function POST(req: Request) {
           customerName: data.customerName.trim(),
           customerPhone: data.customerPhone.replace(/\s/g, ""),
           customerEmail: data.customerEmail || null,
+          customerId,
           address: data.fulfillmentType === "delivery" ? data.address?.trim() : null,
+          addressLat: data.fulfillmentType === "delivery" ? data.addressLat || null : null,
+          addressLng: data.fulfillmentType === "delivery" ? data.addressLng || null : null,
+          landmark: data.fulfillmentType === "delivery" ? data.landmark || null : null,
+          locationConfirmed: data.fulfillmentType === "delivery" ? data.locationConfirmed : false,
+          deliveryZoneId: priced.zone?.id ?? null,
+          scheduledDate: data.scheduledDate || null,
+          scheduledTime: data.scheduledTime || null,
+          recipientName: isGift ? data.recipientName?.trim() : null,
+          recipientPhone: isGift ? data.recipientPhone?.replace(/\s/g, "") || null : null,
+          giftMessage: isGift ? data.giftMessage || null : null,
+          hidePrices: isGift ? Boolean(data.hidePrices) : false,
           note: data.note || null,
           subtotal: priced.subtotal,
           discount: priced.discount,
@@ -165,12 +255,15 @@ export async function POST(req: Request) {
     // Email/order notifications go through the outbox — never block ordering
     await notify({
       type: "new_order",
-      subject: `New order ${dto.reference} — GH₵${(dto.total / 100).toFixed(2)}`,
+      subject: `New order ${dto.reference} — GH₵${(dto.total / 100).toFixed(2)}${isGift ? " (GIFT)" : ""}`,
       payload: {
         reference: dto.reference,
         total: dto.total,
         items: dto.items.length,
         fulfillmentType: dto.fulfillmentType,
+        isGift,
+        zone: dto.zoneName,
+        scheduled: dto.scheduledDate,
       },
     });
     await logAudit({ actor: "customer", action: "order.create", target: dto.reference, meta: { total: dto.total } });

@@ -12,8 +12,8 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
 import { useAppStore } from "@/store/app-store";
-import { formatGHS } from "@/lib/client";
 import { cn } from "@/lib/utils";
+import { useCurrency } from "./currency-context";
 import { productAlt, SafeImage, usePrefersReducedMotion } from "./storefront-lib";
 
 const GALLERY_INTERVAL_MS = 4000;
@@ -26,6 +26,7 @@ export function ProductModal() {
   const addToCart = useAppStore((s) => s.addToCart);
   const bootstrap = useAppStore((s) => s.bootstrap);
   const reduced = usePrefersReducedMotion();
+  const { formatMoney } = useCurrency();
 
   const product = productModalId ? (bootstrap?.products.find((p) => p.id === productModalId) ?? null) : null;
   const images = product?.images ?? [];
@@ -237,7 +238,7 @@ export function ProductModal() {
                           <RadioGroupItem id={`variant-${v.id}`} value={v.id} disabled={!v.available} />
                           <span className="font-medium">{v.name}</span>
                         </span>
-                        <span className="font-semibold text-forest">{formatGHS(v.price)}</span>
+                        <span className="font-semibold text-forest">{formatMoney(v.price)}</span>
                       </Label>
                     ))}
                   </RadioGroup>
@@ -268,7 +269,7 @@ export function ProductModal() {
                           />
                           <span className="font-medium">{a.name}</span>
                         </span>
-                        <span className="font-semibold text-forest">+{formatGHS(a.price)}</span>
+                        <span className="font-semibold text-forest">+{formatMoney(a.price)}</span>
                       </Label>
                     ))}
                   </div>
@@ -315,7 +316,7 @@ export function ProductModal() {
                   {canAdd ? (
                     <>
                       <Check className="size-5" aria-hidden="true" />
-                      Add to cart · {formatGHS(total)}
+                      Add to cart · {formatMoney(total)}
                     </>
                   ) : (
                     "Currently unavailable"

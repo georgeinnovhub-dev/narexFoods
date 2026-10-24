@@ -13,6 +13,14 @@ const patchSchema = z.object({
   hours: z.record(z.string(), z.string()).optional(),
   ordering: z.record(z.string(), z.unknown()).optional(),
   delivery: z.record(z.string(), z.unknown()).optional(),
+  currency: z
+    .object({
+      enabled: z.boolean().optional(),
+      codes: z.array(z.string().regex(/^[A-Z]{3}$/, "Currency codes must be 3 uppercase letters")).max(10).optional(),
+      refreshMinutes: z.number().int().min(5).max(1440).optional(),
+      markupPercent: z.number().int().min(0).max(20).optional(),
+    })
+    .optional(),
   payments: z.record(z.string(), z.unknown()).optional(),
 });
 

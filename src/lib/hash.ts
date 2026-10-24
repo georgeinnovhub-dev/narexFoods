@@ -9,6 +9,11 @@ export type HashView =
   | "services"
   | "parlays"
   | "eatntour"
+  | "account"
+  | "blog"
+  | "privacy"
+  | "terms"
+  | "delivery-info"
   | "admin";
 
 const VIEWS: HashView[] = [
@@ -20,6 +25,11 @@ const VIEWS: HashView[] = [
   "services",
   "parlays",
   "eatntour",
+  "account",
+  "blog",
+  "privacy",
+  "terms",
+  "delivery-info",
   "admin",
 ];
 
@@ -33,6 +43,8 @@ const ADMIN_MODULES = [
   "marketing",
   "content",
   "reports",
+  "quotes",
+  "zones",
   "system",
 ] as const;
 

@@ -17,6 +17,8 @@ export type AdminModule =
   | "marketing"
   | "content"
   | "reports"
+  | "quotes"
+  | "zones"
   | "system";
 
 export interface CartItem {
@@ -68,6 +70,17 @@ interface AppState {
   // Staff session (admin)
   staff: StaffSession | null;
   setStaff: (s: StaffSession | null) => void;
+
+  // Customer session (account) — not persisted; restored via /api/account/me
+  customer: { id: string; name: string; email: string } | null;
+  setCustomer: (c: { id: string; name: string; email: string } | null) => void;
+
+  /**
+   * One-shot values copied from a saved address ("Use at checkout").
+   * Consumed once by checkout-view on mount and cleared — never persisted.
+   */
+  checkoutPrefill: { address?: string; landmark?: string; zoneId?: string } | null;
+  setCheckoutPrefill: (p: { address?: string; landmark?: string; zoneId?: string } | null) => void;
 }
 
 /**
@@ -139,6 +152,12 @@ export const useAppStore = create<AppState>()(
 
       staff: null,
       setStaff: (s) => set({ staff: s }),
+
+      customer: null,
+      setCustomer: (c) => set({ customer: c }),
+
+      checkoutPrefill: null,
+      setCheckoutPrefill: (p) => set({ checkoutPrefill: p }),
     }),
     {
       name: "narex-cart",

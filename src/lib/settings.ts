@@ -6,6 +6,8 @@ export interface SiteSettings {
   hours: Record<string, string>;
   ordering: { enabled: boolean; pauseNote: string };
   delivery: { enabled: boolean; baseFee: number; freeOver: number | null; areas: string[]; note: string };
+  catering: { enabled: boolean; note: string };
+  currency: { enabled: boolean; codes: string[]; refreshMinutes: number; markupPercent: number };
   payments: {
     manual: { enabled: boolean; recipientName: string; method: string; details: string; instructions: string };
     paystack: { enabled: boolean; publicKey: string };
@@ -46,6 +48,16 @@ export const DEFAULT_SETTINGS: SiteSettings = {
     freeOver: null,
     areas: ["Mampong-Akuapem", "Akropong", "Aburi", "Nsawam", "Koforidua"],
     note: "Delivery is available within our configured service areas only.",
+  },
+  catering: {
+    enabled: true,
+    note: "Send us your event details and our catering team will respond with a tailored quotation within 24 hours.",
+  },
+  currency: {
+    enabled: false, // off by default until an operator enables estimates
+    codes: ["USD", "GBP", "EUR", "NGN", "CAD"],
+    refreshMinutes: 60,
+    markupPercent: 0, // display-only markup, never applied to charged GHS totals
   },
   payments: {
     manual: {
@@ -108,6 +120,8 @@ export function publicSettings(s: SiteSettings) {
     hours: s.hours,
     ordering: s.ordering,
     delivery: s.delivery,
+    catering: s.catering,
+    currency: s.currency,
     payments: {
       manual: s.payments.manual,
       paystack: { enabled: s.payments.paystack.enabled, publicKey: s.payments.paystack.publicKey },

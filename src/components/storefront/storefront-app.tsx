@@ -19,6 +19,10 @@ import { CartSheet } from "./cart-sheet";
 import { ProductModal } from "./product-modal";
 import { CampaignPopup } from "./campaign-popup";
 import { EatntourPromo } from "./eatntour-promo";
+import { CurrencyProvider } from "./currency-context";
+import { AccountView } from "./account-view";
+import { BlogView } from "./blog-view";
+import { DeliveryInfoView, PrivacyView, TermsView } from "./info-views";
 
 export function StorefrontApp() {
   const view = useAppStore((s) => s.view);
@@ -70,28 +74,40 @@ export function StorefrontApp() {
         return <SuccessView />;
       case "track":
         return <TrackView />;
+      case "account":
+        return <AccountView />;
+      case "blog":
+        return <BlogView />;
+      case "privacy":
+        return <PrivacyView />;
+      case "terms":
+        return <TermsView />;
+      case "delivery-info":
+        return <DeliveryInfoView />;
       default:
         return null;
     }
   }
 
   return (
-    <div className="flex w-full flex-1 flex-col bg-cream">
-      <a
-        href="#storefront-main"
-        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-full focus:bg-forest focus:px-4 focus:py-2 focus:text-cream"
-      >
-        Skip to content
-      </a>
-      <SiteHeader />
-      <main id="storefront-main" className="flex-1">
-        {renderBody()}
-      </main>
-      <SiteFooter className="mt-auto" />
-      <CartSheet />
-      <ProductModal />
-      <CampaignPopup />
-      <EatntourPromo />
-    </div>
+    <CurrencyProvider>
+      <div className="flex w-full flex-1 flex-col bg-cream">
+        <a
+          href="#storefront-main"
+          className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-full focus:bg-forest focus:px-4 focus:py-2 focus:text-cream"
+        >
+          Skip to content
+        </a>
+        <SiteHeader />
+        <main id="storefront-main" className="flex-1">
+          {renderBody()}
+        </main>
+        <SiteFooter className="mt-auto" />
+        <CartSheet />
+        <ProductModal />
+        <CampaignPopup />
+        <EatntourPromo />
+      </div>
+    </CurrencyProvider>
   );
 }

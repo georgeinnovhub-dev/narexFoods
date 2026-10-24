@@ -2,14 +2,14 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { CheckCircle2, Copy, Home, MessageCircle, PackageSearch, Route } from "lucide-react";
+import { CalendarClock, CheckCircle2, Copy, Gift, Home, MapPin, MessageCircle, PackageSearch, Route } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useAppStore } from "@/store/app-store";
-import { formatGHS } from "@/lib/client";
+import { useCurrency } from "./currency-context";
 import { StatusBadge } from "./status-badge";
 import { StatusTimeline } from "./status-timeline";
 import { PaymentBox } from "./payment-box";
@@ -20,6 +20,7 @@ export function SuccessView() {
   const navigate = useAppStore((s) => s.navigate);
   const [waOpened, setWaOpened] = useState(false);
   const reduced = usePrefersReducedMotion();
+  const { formatMoney } = useCurrency();
 
   if (!lastOrder) {
     return (
@@ -114,16 +115,62 @@ export function SuccessView() {
         <CardContent className="space-y-5 p-5 sm:p-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="font-display text-lg font-semibold text-forest">Order status</h2>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <StatusBadge status={order.status} kind="order" />
               <Badge variant="outline" className="rounded-full capitalize">
                 {order.fulfillmentType}
               </Badge>
+              {order.zoneName && (
+                <Badge variant="outline" className="gap-1 rounded-full text-forest">
+                  <MapPin className="size-3" aria-hidden="true" />
+                  {order.zoneName}
+                </Badge>
+              )}
+              {order.scheduledDate && (
+                <Badge variant="outline" className="gap-1 rounded-full text-forest">
+                  <CalendarClock className="size-3" aria-hidden="true" />
+                  {order.scheduledDate}
+                  {order.scheduledTime ? ` · ${order.scheduledTime}` : ""}
+                </Badge>
+              )}
+              {order.locationConfirmed && (
+                <Badge className="gap-1 rounded-full bg-emerald-600 text-white">
+                  <CheckCircle2 className="size-3" aria-hidden="true" />
+                  Location confirmed
+                </Badge>
+              )}
             </div>
           </div>
           <StatusTimeline events={order.events} />
         </CardContent>
       </Card>
+
+      {/* Gift banner (spec §9) */}
+      {order.recipientName && (
+        <Card className="mt-6 overflow-hidden rounded-2xl border-gold/50 shadow-sm">
+          <CardContent className="flex items-start gap-4 bg-gold/10 p-5 sm:p-6">
+            <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-gold/25">
+              <Gift className="size-6 text-forest" aria-hidden="true" />
+            </span>
+            <div className="min-w-0">
+              <h2 className="font-display text-lg font-semibold text-forest">Gift for {order.recipientName}</h2>
+              {order.recipientPhone && (
+                <p className="mt-0.5 text-xs text-muted-foreground">Recipient: {order.recipientPhone}</p>
+              )}
+              {order.giftMessage && (
+                <p className="mt-2 rounded-xl bg-background/70 px-3 py-2 text-sm italic leading-relaxed text-forest">
+                  “{order.giftMessage}”
+                </p>
+              )}
+              {order.hidePrices && (
+                <p className="mt-2 text-xs font-medium text-forest/80">
+                  Prices are hidden on this order — the recipient sees the items only.
+                </p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Summary */}
       <Card className="mt-6 rounded-2xl shadow-sm">
@@ -142,7 +189,9 @@ export function SuccessView() {
                     </p>
                   )}
                 </div>
-                <span className="shrink-0 font-semibold">{formatGHS(item.lineTotal)}</span>
+                {!order.hidePrices && (
+                  <span className="shrink-0 font-semibold">{formatMoney(item.lineTotal)}</span>
+                )}
               </li>
             ))}
           </ul>
@@ -150,6 +199,7 @@ export function SuccessView() {
             <p className="text-sm text-muted-foreground">
               <span className="font-medium text-foreground">Deliver to: </span>
               {order.address}
+              {order.landmark ? ` · ${order.landmark}` : ""}
             </p>
           )}
           {order.note && (
@@ -159,29 +209,36 @@ export function SuccessView() {
             </p>
           )}
           <Separator />
-          <div className="space-y-1.5 text-sm">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Subtotal</span>
-              <span>{formatGHS(order.subtotal)}</span>
-            </div>
-            {order.discount > 0 && (
-              <div className="flex justify-between text-forest">
-                <span>Discount {order.couponCode ? `(${order.couponCode})` : ""}</span>
-                <span>−{formatGHS(order.discount)}</span>
-              </div>
-            )}
-            {order.deliveryFee > 0 && (
+          {order.hidePrices ? (
+            <p className="flex items-center gap-2 rounded-xl border border-gold/40 bg-gold/10 px-4 py-3 text-sm font-medium text-forest">
+              <Gift className="size-4 shrink-0" aria-hidden="true" />
+              Prices hidden for gift orders — the amount is known only to you and our payments desk.
+            </p>
+          ) : (
+            <div className="space-y-1.5 text-sm">
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Delivery fee</span>
-                <span>{formatGHS(order.deliveryFee)}</span>
+                <span className="text-muted-foreground">Subtotal</span>
+                <span>{formatMoney(order.subtotal)}</span>
               </div>
-            )}
-            <Separator className="my-2" />
-            <div className="flex justify-between text-base">
-              <span className="font-semibold">Total</span>
-              <span className="font-display font-bold text-forest">{formatGHS(order.total)}</span>
+              {order.discount > 0 && (
+                <div className="flex justify-between text-forest">
+                  <span>Discount {order.couponCode ? `(${order.couponCode})` : ""}</span>
+                  <span>−{formatMoney(order.discount)}</span>
+                </div>
+              )}
+              {order.deliveryFee > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Delivery fee</span>
+                  <span>{formatMoney(order.deliveryFee)}</span>
+                </div>
+              )}
+              <Separator className="my-2" />
+              <div className="flex justify-between text-base">
+                <span className="font-semibold">Total</span>
+                <span className="font-display font-bold text-forest">{formatMoney(order.total)}</span>
+              </div>
             </div>
-          </div>
+          )}
         </CardContent>
       </Card>
 

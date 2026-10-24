@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useAppStore } from "@/store/app-store";
-import { apiSend, formatGHS } from "@/lib/client";
+import { apiSend } from "@/lib/client";
+import { useCurrency } from "./currency-context";
 import { cartUnitPrice } from "./storefront-lib";
 import type { CouponValidateResponse } from "@/lib/types";
 
@@ -20,6 +21,7 @@ export function CartSheet() {
   const removeFromCart = useAppStore((s) => s.removeFromCart);
   const navigate = useAppStore((s) => s.navigate);
   const bootstrap = useAppStore((s) => s.bootstrap);
+  const { formatMoney } = useCurrency();
 
   const [code, setCode] = useState("");
   const [applying, setApplying] = useState(false);
@@ -111,7 +113,7 @@ export function CartSheet() {
                         {addons.length > 0 && ` · ${addons.map((a) => a.name).join(", ")}`}
                       </p>
                       <p className="mt-1 text-xs text-muted-foreground">
-                        {formatGHS(unit)} each
+                        {formatMoney(unit)} each
                       </p>
                     </div>
                     <Button
@@ -149,7 +151,7 @@ export function CartSheet() {
                         <Plus className="size-3.5" aria-hidden="true" />
                       </Button>
                     </div>
-                    <p className="text-sm font-bold text-forest">{formatGHS(unit * item.quantity)}</p>
+                    <p className="text-sm font-bold text-forest">{formatMoney(unit * item.quantity)}</p>
                   </div>
                 </div>
               ))}
@@ -200,19 +202,19 @@ export function CartSheet() {
               <div className="space-y-1.5 text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Subtotal</span>
-                  <span className="font-semibold">{formatGHS(subtotal)}</span>
+                  <span className="font-semibold">{formatMoney(subtotal)}</span>
                 </div>
                 {discount > 0 && (
                   <div className="flex justify-between text-forest">
                     <span>Discount ({coupon?.code})</span>
-                    <span className="font-semibold">−{formatGHS(discount)}</span>
+                    <span className="font-semibold">−{formatMoney(discount)}</span>
                   </div>
                 )}
                 <p className="text-xs text-muted-foreground">Delivery fee is calculated at checkout.</p>
                 <Separator className="my-2" />
                 <div className="flex justify-between text-base">
                   <span className="font-semibold">Estimated total</span>
-                  <span className="font-display font-bold text-forest">{formatGHS(Math.max(0, subtotal - discount))}</span>
+                  <span className="font-display font-bold text-forest">{formatMoney(Math.max(0, subtotal - discount))}</span>
                 </div>
               </div>
 

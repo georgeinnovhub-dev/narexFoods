@@ -26,8 +26,9 @@ import {
   YAxis,
 } from "recharts";
 import { formatGHS } from "@/lib/client";
-import type { OverviewStats } from "@/lib/types";
+import type { AdminQuoteListResponse, OverviewStats } from "@/lib/types";
 import { useAdminApi } from "@/components/admin/admin-context";
+import { useAppStore } from "@/store/app-store";
 import {
   EmptyState,
   OrderStatusBadge,
@@ -48,7 +49,10 @@ function dayLabel(iso: string): string {
 
 export function OverviewModule() {
   const { get } = useAdminApi();
+  const canCatering = useAppStore((s) => s.staff?.permissions.includes("catering.manage") ?? false);
+  const setAdminModule = useAppStore((s) => s.setAdminModule);
   const [stats, setStats] = useState<OverviewStats | null>(null);
+  const [pendingQuotes, setPendingQuotes] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
@@ -70,6 +74,18 @@ export function OverviewModule() {
       cancelled = true;
     };
   }, [get]);
+
+  useEffect(() => {
+    if (!canCatering) return;
+    let cancelled = false;
+    (async () => {
+      const res = await get<AdminQuoteListResponse>("/api/admin/quotes?status=pending&pageSize=1");
+      if (!cancelled && res) setPendingQuotes(res.total);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [get, canCatering]);
 
   const trend = (stats?.salesTrend ?? []).map((t) => ({
     ...t,
@@ -143,6 +159,20 @@ export function OverviewModule() {
               sub="Across paid orders"
             />
           </section>
+
+          {pendingQuotes !== null && pendingQuotes > 0 ? (
+            <button
+              type="button"
+              onClick={() => setAdminModule("quotes")}
+              className="flex w-full items-center gap-3 rounded-2xl border border-gold/50 bg-gold/10 px-5 py-4 text-left transition-colors hover:bg-gold/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <ClipboardList className="size-5 shrink-0 text-gold" aria-hidden="true" />
+              <span className="text-sm font-medium text-foreground">
+                {pendingQuotes} catering quotation{pendingQuotes === 1 ? "" : "s"} awaiting review
+                <span className="ml-1 font-normal text-muted-foreground">— open the quotes queue</span>
+              </span>
+            </button>
+          ) : null}
 
           {stats.alerts.length > 0 ? (
             <Card className="rounded-2xl border-amber-300 bg-amber-50">

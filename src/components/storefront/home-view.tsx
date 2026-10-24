@@ -327,41 +327,61 @@ export function HomeView() {
       {/* Blog highlights */}
       {posts.length > 0 && (
         <section aria-labelledby="blog-heading" className="mx-auto w-full max-w-6xl px-4 py-14 md:py-20">
-          <Reveal className="mb-8">
-            <Eyebrow>From the kitchen</Eyebrow>
-            <h2 id="blog-heading" className="mt-1.5 font-display text-3xl font-bold text-forest sm:text-4xl">
-              Stories &amp; Updates
-            </h2>
+          <Reveal className="mb-8 flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <Eyebrow>From the kitchen</Eyebrow>
+              <h2 id="blog-heading" className="mt-1.5 font-display text-3xl font-bold text-forest sm:text-4xl">
+                Stories &amp; Updates
+              </h2>
+            </div>
+            <Button
+              variant="outline"
+              onClick={() => navigate("blog")}
+              className="min-h-11 rounded-full border-forest/30 text-forest hover:bg-forest hover:text-cream"
+            >
+              Visit the Food Journal
+            </Button>
           </Reveal>
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {posts.map((post, i) => (
               <Reveal key={post.id} delay={i * 0.08}>
-                <Card className="h-full overflow-hidden rounded-2xl border-border shadow-sm transition-shadow hover:shadow-md">
-                  <div className="relative aspect-[16/10] w-full overflow-hidden bg-muted">
-                    <SafeImage
-                      src={post.coverImage || undefined}
-                      alt={post.altText || post.title}
-                      className="h-full w-full"
-                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                    />
-                  </div>
-                  <CardContent className="space-y-2 p-4">
-                    <div className="flex flex-wrap gap-1.5">
-                      {post.tags.slice(0, 2).map((tag) => (
-                        <Badge key={tag} variant="secondary" className="rounded-full text-[11px]">
-                          {tag}
-                        </Badge>
-                      ))}
+                <button
+                  type="button"
+                  onClick={() => navigate("blog", { post: post.slug })}
+                  aria-label={`Read more: ${post.title}`}
+                  className="group block h-full w-full rounded-2xl text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <Card className="h-full overflow-hidden rounded-2xl border-border shadow-sm transition-shadow group-hover:shadow-md group-focus-visible:shadow-md">
+                    <div className="relative aspect-[16/10] w-full overflow-hidden bg-muted">
+                      <SafeImage
+                        src={post.coverImage || undefined}
+                        alt={post.altText || post.title}
+                        className="h-full w-full transition-transform duration-500 group-hover:scale-[1.04]"
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                      />
                     </div>
-                    <h3 className="font-display text-lg font-semibold leading-snug">{post.title}</h3>
-                    <p className="line-clamp-2 text-sm text-muted-foreground">{post.excerpt}</p>
-                    {post.publishedAt && (
-                      <p className="text-xs text-muted-foreground/70">
-                        {format(new Date(post.publishedAt), "d MMM yyyy")}
-                      </p>
-                    )}
-                  </CardContent>
-                </Card>
+                    <CardContent className="space-y-2 p-4">
+                      <div className="flex flex-wrap gap-1.5">
+                        {post.tags.slice(0, 2).map((tag) => (
+                          <Badge key={tag} variant="secondary" className="rounded-full text-[11px]">
+                            {tag}
+                          </Badge>
+                        ))}
+                      </div>
+                      <h3 className="font-display text-lg font-semibold leading-snug">{post.title}</h3>
+                      <p className="line-clamp-2 text-sm text-muted-foreground">{post.excerpt}</p>
+                      {post.publishedAt && (
+                        <p className="text-xs text-muted-foreground/70">
+                          {format(new Date(post.publishedAt), "d MMM yyyy")}
+                        </p>
+                      )}
+                      <span className="inline-flex items-center gap-1 text-sm font-semibold text-forest">
+                        Read more
+                        <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+                      </span>
+                    </CardContent>
+                  </Card>
+                </button>
               </Reveal>
             ))}
           </div>

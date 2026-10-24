@@ -7,8 +7,8 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAppStore } from "@/store/app-store";
-import { formatGHS } from "@/lib/client";
 import { cn } from "@/lib/utils";
+import { useCurrency } from "./currency-context";
 import { lowestVariantPrice, productAlt, SafeImage, usePrefersReducedMotion } from "./storefront-lib";
 import type { ProductDTO } from "@/lib/types";
 
@@ -19,6 +19,7 @@ export function ProductCard({ product }: { product: ProductDTO }) {
   const addToCart = useAppStore((s) => s.addToCart);
   const setCartOpen = useAppStore((s) => s.setCartOpen);
   const reduced = usePrefersReducedMotion();
+  const { formatMoney } = useCurrency();
 
   const images = product.images;
   const [imgIndex, setImgIndex] = useState(0);
@@ -136,9 +137,9 @@ export function ProductCard({ product }: { product: ProductDTO }) {
         <div className="flex items-start justify-between gap-3">
           <h3 className="font-display text-lg font-semibold leading-snug">{product.name}</h3>
           {fromPrice !== null && (
-            <p className="shrink-0 text-sm font-bold text-forest">
+            <p className="shrink-0 text-right text-sm font-bold text-forest">
               {product.variants.length > 1 && <span className="mr-0.5 text-xs font-medium text-muted-foreground">from </span>}
-              {formatGHS(fromPrice)}
+              {formatMoney(fromPrice)}
             </p>
           )}
         </div>

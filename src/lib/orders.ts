@@ -1,6 +1,7 @@
 import { randomBytes } from "crypto";
 import { db } from "@/lib/db";
 import { getSettings } from "@/lib/settings";
+import { resolveZoneForAddress, toResolvedZone, type ResolvedZone } from "@/lib/zones";
 
 /** Unguessable order access reference — never expose orders by sequential id alone (spec §4). */
 export function generateOrderReference(): string {
@@ -41,6 +42,7 @@ export interface PricedOrder {
   total: number;
   couponCode: string | null;
   unavailable: string[];
+  zone: ResolvedZone | null;
 }
 
 export interface CouponRow {
@@ -64,6 +66,7 @@ export async function priceOrder(input: {
   items: IncomingItem[];
   fulfillmentType: string;
   couponCode?: string | null;
+  address?: string | null;
 }): Promise<PricedOrder> {
   const settings = await getSettings();
   const unavailable: string[] = [];
@@ -128,15 +131,30 @@ export async function priceOrder(input: {
   }
 
   const deliveryEnabled = settings.delivery.enabled;
-  const deliveryFee =
-    input.fulfillmentType === "delivery" && deliveryEnabled
-      ? settings.delivery.freeOver && subtotal >= settings.delivery.freeOver
-        ? 0
-        : settings.delivery.baseFee
-      : 0;
+  let deliveryFee = 0;
+  let zone: ResolvedZone | null = null;
+  if (input.fulfillmentType === "delivery" && deliveryEnabled) {
+    // Zone-based fee resolution (spec §7) — falls back to the legacy flat fee
+    // only when NO zones are configured at all.
+    const zones = await db.deliveryZone.count({ where: { active: true } });
+    if (zones > 0) {
+      const match = input.address ? await resolveZoneForAddress(input.address) : null;
+      if (match) {
+        zone = toResolvedZone(match);
+        const freeOver = settings.delivery.freeOver;
+        deliveryFee = freeOver && subtotal >= freeOver ? 0 : zone.fee;
+      }
+      // no match -> zone stays null; the API layer refuses the order
+    } else {
+      deliveryFee =
+        settings.delivery.freeOver && subtotal >= settings.delivery.freeOver
+          ? 0
+          : settings.delivery.baseFee;
+    }
+  }
 
   const total = Math.max(0, subtotal - discount + deliveryFee);
-  return { lines, subtotal, discount, deliveryFee, total, couponCode, unavailable };
+  return { lines, subtotal, discount, deliveryFee, total, couponCode, unavailable, zone };
 }
 
 export function isCouponUsable(coupon: CouponRow, subtotal: number): boolean {

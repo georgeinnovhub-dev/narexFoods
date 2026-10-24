@@ -11,6 +11,8 @@ export const PERMISSIONS = [
   "reports.view", // analytics, exports
   "settings.manage", // system settings, integrations
   "audit.view", // audit logs
+  "catering.manage", // catering & service-package quotations (spec §8)
+  "zones.manage", // delivery zones, fees & coverage (spec §7)
 ] as const;
 
 export type Permission = (typeof PERMISSIONS)[number];
@@ -27,6 +29,8 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   "reports.view": "Analytics & exports",
   "settings.manage": "System settings",
   "audit.view": "Audit logs",
+  "catering.manage": "Catering quotations",
+  "zones.manage": "Delivery zones & fees",
 };
 
 export interface SessionPayload {
@@ -41,3 +45,16 @@ export interface SessionPayload {
 
 export const SESSION_COOKIE = "narex_session";
 export const SESSION_TTL_SECONDS = 60 * 60 * 12; // 12h
+
+// ---------- Customer sessions (spec §16 — separate cookie from staff) ----------
+
+export const CUSTOMER_COOKIE = "narex_customer";
+export const CUSTOMER_TTL_SECONDS = 60 * 60 * 24 * 30; // 30 days
+
+export interface CustomerSessionPayload {
+  typ: "customer";
+  customerId: string;
+  email: string;
+  name: string;
+  exp: number;
+}

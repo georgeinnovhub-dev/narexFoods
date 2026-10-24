@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
   Clock3,
+  Coins,
   CreditCard,
   MailWarning,
   Save,
@@ -22,6 +23,7 @@ import { OutboxStatusBadge, PesewasInput, SkeletonRows } from "@/components/admi
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -41,10 +43,11 @@ const DAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday"
 export function SystemModule() {
   return (
     <Tabs defaultValue="store" className="space-y-4">
-      <TabsList>
+      <TabsList className="h-auto flex-wrap justify-start">
         <TabsTrigger value="store">Store & ordering</TabsTrigger>
         <TabsTrigger value="brand">Brand & contact</TabsTrigger>
         <TabsTrigger value="payments">Payments</TabsTrigger>
+        <TabsTrigger value="currency">Currency</TabsTrigger>
         <TabsTrigger value="integrations">Integrations</TabsTrigger>
         <TabsTrigger value="outbox">Notifications</TabsTrigger>
         <TabsTrigger value="audit">Audit log</TabsTrigger>
@@ -52,6 +55,7 @@ export function SystemModule() {
       <TabsContent value="store"><StoreSettingsTab /></TabsContent>
       <TabsContent value="brand"><BrandTab /></TabsContent>
       <TabsContent value="payments"><PaymentsTab /></TabsContent>
+      <TabsContent value="currency"><CurrencyTab /></TabsContent>
       <TabsContent value="integrations"><IntegrationsTab /></TabsContent>
       <TabsContent value="outbox"><OutboxTab /></TabsContent>
       <TabsContent value="audit"><AuditTab /></TabsContent>
@@ -419,6 +423,154 @@ function PaymentsTab() {
       <div className="xl:col-span-2">
         <Button onClick={() => void save()} disabled={saving} className="bg-forest text-cream hover:bg-[#23503E]">
           <Save className="h-4 w-4" /> {saving ? "Saving…" : "Save payment settings"}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+// ---------------- Currency (display estimates only — charged currency stays GHS) ----------------
+
+const CURRENCY_CODE_OPTIONS = ["USD", "GBP", "EUR", "NGN", "CAD"] as const;
+
+function CurrencyTab() {
+  const { settings, loading, load } = useSettings();
+  const { send } = useAdminApi();
+  const [enabled, setEnabled] = useState(false);
+  const [codes, setCodes] = useState<string[]>([]);
+  const [refreshMinutes, setRefreshMinutes] = useState("60");
+  const [markupPercent, setMarkupPercent] = useState("0");
+  const [saving, setSaving] = useState(false);
+  // Tracks which settings snapshot the form was hydrated from; a fresh fetch re-hydrates.
+  const [hydratedFrom, setHydratedFrom] = useState<SiteSettings | null>(null);
+
+  if (settings && settings !== hydratedFrom) {
+    setHydratedFrom(settings);
+    setEnabled(settings.currency.enabled);
+    setCodes(settings.currency.codes.filter((c) => (CURRENCY_CODE_OPTIONS as readonly string[]).includes(c)));
+    setRefreshMinutes(String(settings.currency.refreshMinutes));
+    setMarkupPercent(String(settings.currency.markupPercent));
+  }
+
+  function toggleCode(code: string, on: boolean) {
+    setCodes((cur) => (on ? (cur.includes(code) ? cur : [...cur, code]) : cur.filter((c) => c !== code)));
+  }
+
+  async function save() {
+    if (enabled && codes.length === 0) {
+      toast.error("Enable at least one currency code, or switch estimates off.");
+      return;
+    }
+    const refresh = Math.round(Number(refreshMinutes));
+    if (!Number.isFinite(refresh) || refresh < 5 || refresh > 1440) {
+      toast.error("Rate refresh interval must be between 5 and 1440 minutes.");
+      return;
+    }
+    const markup = Math.round(Number(markupPercent));
+    if (!Number.isFinite(markup) || markup < 0 || markup > 20) {
+      toast.error("Display markup must be between 0 and 20 percent.");
+      return;
+    }
+    setSaving(true);
+    const res = await send<{ settings: SiteSettings }>("/api/admin/settings", "PUT", {
+      currency: {
+        enabled,
+        codes: enabled ? CURRENCY_CODE_OPTIONS.filter((c) => codes.includes(c)) : codes,
+        refreshMinutes: refresh,
+        markupPercent: markup,
+      },
+    });
+    setSaving(false);
+    if (res) {
+      toast.success("Currency settings saved.");
+      await load();
+    }
+  }
+
+  if (loading && !settings) return <CardSkeleton rows={4} />;
+
+  return (
+    <div className="grid gap-4 xl:grid-cols-2">
+      <Card className="rounded-2xl shadow-sm">
+        <CardHeader>
+          <CardTitle className="font-display flex items-center gap-2 text-base">
+            <Coins className="h-4 w-4 text-forest" /> Converted price estimates
+          </CardTitle>
+          <CardDescription>
+            Customers always pay in Ghana cedis — converted amounts are display-only estimates.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex items-center justify-between rounded-xl border border-border p-3">
+            <div>
+              <Label>Show converted price estimates</Label>
+              <p className="text-xs text-muted-foreground">
+                When on, the storefront can show approximate prices in the currencies below.
+              </p>
+            </div>
+            <Switch checked={enabled} onCheckedChange={setEnabled} aria-label="Toggle currency estimates" />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Currencies offered as estimates</Label>
+            <div className="flex flex-wrap gap-2">
+              {CURRENCY_CODE_OPTIONS.map((code) => (
+                <label
+                  key={code}
+                  className="flex cursor-pointer items-center gap-2 rounded-xl border border-border px-3 py-2 text-sm font-medium has-[[data-state=checked]]:border-forest/40 has-[[data-state=checked]]:bg-forest/5"
+                >
+                  <Checkbox
+                    checked={codes.includes(code)}
+                    onCheckedChange={(c) => toggleCode(code, c === true)}
+                    aria-label={`Offer ${code} estimates`}
+                  />
+                  {code}
+                </label>
+              ))}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="rounded-2xl shadow-sm">
+        <CardHeader>
+          <CardTitle className="font-display text-base">Rates & markup</CardTitle>
+          <CardDescription>Rates are fetched from a public provider and cached; refresh prudently.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="cur-refresh">Rate refresh interval (minutes, 5–1440)</Label>
+              <Input
+                id="cur-refresh"
+                type="number"
+                min={5}
+                max={1440}
+                value={refreshMinutes}
+                onChange={(e) => setRefreshMinutes(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="cur-markup">Display markup (%, 0–20)</Label>
+              <Input
+                id="cur-markup"
+                type="number"
+                min={0}
+                max={20}
+                value={markupPercent}
+                onChange={(e) => setMarkupPercent(e.target.value)}
+              />
+            </div>
+          </div>
+          <p className="rounded-xl bg-muted/50 p-3 text-xs leading-relaxed text-muted-foreground">
+            The optional markup is a buffer applied to converted estimates only — it is never added to the charged
+            GHS total, and stale rates fall back to the last successful fetch.
+          </p>
+        </CardContent>
+      </Card>
+
+      <div className="xl:col-span-2">
+        <Button onClick={() => void save()} disabled={saving} className="bg-forest text-cream hover:bg-[#23503E]">
+          <Save className="h-4 w-4" /> {saving ? "Saving…" : "Save currency settings"}
         </Button>
       </div>
     </div>

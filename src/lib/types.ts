@@ -56,6 +56,19 @@ export interface CampaignDTO {
   ctaUrl: string | null;
   placement: "popup" | "banner";
   showOnce: boolean;
+  productId: string | null;
+  mealTime: "any" | "breakfast" | "lunch" | "supper";
+}
+
+export interface ZoneDTO {
+  id: string;
+  name: string;
+  areas: string[];
+  fee: number; // pesewas
+  minSubtotal: number;
+  leadMinutes: number;
+  requiresQuote: boolean;
+  note: string;
 }
 
 export interface BootstrapResponse {
@@ -63,6 +76,7 @@ export interface BootstrapResponse {
   categories: CategoryDTO[];
   products: ProductDTO[];
   campaigns: CampaignDTO[];
+  zones: ZoneDTO[];
   serverTime: string;
 }
 
@@ -81,6 +95,18 @@ export interface CheckoutPayload {
   customerPhone: string;
   customerEmail?: string;
   address?: string;
+  landmark?: string;
+  addressLat?: string;
+  addressLng?: string;
+  locationConfirmed?: boolean;
+  deliveryZoneId?: string;
+  scheduledDate?: string; // YYYY-MM-DD
+  scheduledTime?: string;
+  isGift?: boolean;
+  recipientName?: string;
+  recipientPhone?: string;
+  giftMessage?: string;
+  hidePrices?: boolean;
   note?: string;
   couponCode?: string;
 }
@@ -128,6 +154,15 @@ export interface OrderDTO {
   customerPhone: string;
   customerEmail: string | null;
   address: string | null;
+  landmark: string | null;
+  locationConfirmed: boolean;
+  zoneName: string | null;
+  scheduledDate: string | null;
+  scheduledTime: string | null;
+  recipientName: string | null;
+  recipientPhone: string | null;
+  giftMessage: string | null;
+  hidePrices: boolean;
   note: string | null;
   subtotal: number;
   discount: number;
@@ -159,6 +194,68 @@ export interface CouponValidateResponse {
   code?: string;
   discount: number;
   message: string;
+}
+
+// ---------- Currency (spec §10 — display estimates only; charged currency is always GHS) ----------
+
+export interface CurrencyRatesResponse {
+  base: "GHS";
+  provider: string;
+  fetchedAt: string;
+  rates: Record<string, { rate: number; fetchedAt: string }>; // code -> 1 GHS = rate CODE
+  stale: boolean;
+}
+
+// ---------- Catering quotations (spec §8) ----------
+
+export interface CateringQuoteDTO {
+  id: string;
+  reference: string;
+  name: string;
+  phone: string;
+  email: string | null;
+  organization: string | null;
+  serviceType: string;
+  people: number;
+  mealsPerPerson: number;
+  eventDate: string | null;
+  eventTime: string | null;
+  venue: string | null;
+  items: { label: string; qty: number; note?: string }[];
+  message: string | null;
+  status: string;
+  quotedTotal: number | null;
+  depositAmount: number | null;
+  adminNote: string | null;
+  handledBy: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateQuoteResponse {
+  reference: string;
+  message: string;
+}
+
+// ---------- Customer account (spec §16) ----------
+
+export interface AccountMeResponse {
+  customer: { id: string; name: string; email: string; phone: string };
+  addresses: SavedAddressDTO[];
+}
+
+export interface SavedAddressDTO {
+  id: string;
+  label: string;
+  address: string;
+  landmark: string | null;
+  lat: string | null;
+  lng: string | null;
+  zoneName: string | null;
+}
+
+export interface AccountOrdersResponse {
+  orders: OrderDTO[];
 }
 
 // ---------- Admin ----------
@@ -275,6 +372,17 @@ export interface CampaignAdminDTO extends CampaignDTO {
   impressions: number;
   clicks: number;
   dismissals: number;
+}
+
+export interface AdminQuoteListResponse {
+  quotes: CateringQuoteDTO[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface AdminZoneListResponse {
+  zones: ZoneDTO[];
 }
 
 export interface BlogPostDTO {

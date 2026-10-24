@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2, MessageCircle, PackageSearch } from "lucide-react";
+import { CalendarClock, CheckCircle2, Gift, Loader2, MapPin, MessageCircle, PackageSearch } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -9,7 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useAppStore } from "@/store/app-store";
-import { apiGet, formatGHS } from "@/lib/client";
+import { apiGet } from "@/lib/client";
+import { useCurrency } from "./currency-context";
 import { apiErrorStatus } from "./storefront-lib";
 import { StatusBadge } from "./status-badge";
 import { StatusTimeline } from "./status-timeline";
@@ -20,6 +21,7 @@ export function TrackView() {
   const navigate = useAppStore((s) => s.navigate);
   const params = useAppStore((s) => s.params);
   const bootstrap = useAppStore((s) => s.bootstrap);
+  const { formatMoney } = useCurrency();
 
   const [reference, setReference] = useState(params.reference ?? "");
   const [phone, setPhone] = useState("");
@@ -76,7 +78,7 @@ export function TrackView() {
                 id="track-ref"
                 value={reference}
                 onChange={(e) => setReference(e.target.value)}
-                placeholder="e.g. NARX-4F2K9Q"
+                placeholder="e.g. NAR-4F2K9Q"
                 className="min-h-11 rounded-xl font-mono uppercase"
                 autoComplete="off"
               />
@@ -133,6 +135,45 @@ export function TrackView() {
                 </div>
                 <StatusBadge status={order.status} kind="order" />
               </div>
+              <div className="flex flex-wrap gap-2">
+                {order.zoneName && (
+                  <Badge variant="outline" className="gap-1 rounded-full text-forest">
+                    <MapPin className="size-3" aria-hidden="true" />
+                    {order.zoneName}
+                  </Badge>
+                )}
+                {order.scheduledDate && (
+                  <Badge variant="outline" className="gap-1 rounded-full text-forest">
+                    <CalendarClock className="size-3" aria-hidden="true" />
+                    {order.scheduledDate}
+                    {order.scheduledTime ? ` · ${order.scheduledTime}` : ""}
+                  </Badge>
+                )}
+                {order.locationConfirmed && (
+                  <Badge className="gap-1 rounded-full bg-emerald-600 text-white">
+                    <CheckCircle2 className="size-3" aria-hidden="true" />
+                    Location confirmed
+                  </Badge>
+                )}
+                {order.recipientName && (
+                  <Badge variant="outline" className="gap-1 rounded-full border-gold/60 bg-gold/10 text-forest">
+                    <Gift className="size-3" aria-hidden="true" />
+                    Gift for {order.recipientName}
+                  </Badge>
+                )}
+              </div>
+              {order.address && (
+                <p className="text-sm text-muted-foreground">
+                  <span className="font-medium text-foreground">Deliver to: </span>
+                  {order.address}
+                  {order.landmark ? ` · ${order.landmark}` : ""}
+                </p>
+              )}
+              {order.giftMessage && (
+                <p className="rounded-xl border border-gold/40 bg-gold/10 px-3 py-2 text-sm italic leading-relaxed text-forest">
+                  “{order.giftMessage}”
+                </p>
+              )}
               <StatusTimeline events={order.events} />
               <Separator />
               <ul className="space-y-2 text-sm">
@@ -142,14 +183,23 @@ export function TrackView() {
                       {item.quantity} × {item.productName}{" "}
                       <span className="text-muted-foreground">({item.variantName})</span>
                     </p>
-                    <span className="shrink-0 font-semibold">{formatGHS(item.lineTotal)}</span>
+                    {!order.hidePrices && (
+                      <span className="shrink-0 font-semibold">{formatMoney(item.lineTotal)}</span>
+                    )}
                   </li>
                 ))}
               </ul>
-              <div className="flex items-center justify-between text-base">
-                <span className="font-semibold">Total</span>
-                <span className="font-display font-bold text-forest">{formatGHS(order.total)}</span>
-              </div>
+              {order.hidePrices ? (
+                <p className="flex items-center gap-2 rounded-xl border border-gold/40 bg-gold/10 px-4 py-3 text-sm font-medium text-forest">
+                  <Gift className="size-4 shrink-0" aria-hidden="true" />
+                  Prices hidden for gift orders.
+                </p>
+              ) : (
+                <div className="flex items-center justify-between text-base">
+                  <span className="font-semibold">Total</span>
+                  <span className="font-display font-bold text-forest">{formatMoney(order.total)}</span>
+                </div>
+              )}
             </CardContent>
           </Card>
 

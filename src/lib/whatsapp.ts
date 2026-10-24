@@ -40,7 +40,7 @@ export const DISPATCH_STATUS_LABELS: Record<string, string> = {
   returned: "Returned",
 };
 
-/** Build the prepared, URL-encoded WhatsApp handoff message for an order (spec §6). */
+/** Build the prepared, URL-encoded WhatsApp handoff message for an order (spec §6, §9, §12). */
 export function buildWhatsAppUrl(
   settings: SiteSettings,
   order: {
@@ -48,6 +48,13 @@ export function buildWhatsAppUrl(
     customerName: string;
     fulfillmentType: string;
     address?: string | null;
+    zoneName?: string | null;
+    landmark?: string | null;
+    scheduledDate?: string | null;
+    scheduledTime?: string | null;
+    recipientName?: string | null;
+    recipientPhone?: string | null;
+    giftMessage?: string | null;
     subtotal: number;
     deliveryFee: number;
     discount: number;
@@ -62,8 +69,17 @@ export function buildWhatsAppUrl(
   lines.push(`*Order reference:* ${order.reference}`);
   lines.push(`*Name:* ${order.customerName}`);
   lines.push(`*Type:* ${order.fulfillmentType === "delivery" ? "Delivery" : "Pickup"}`);
+  if (order.recipientName) {
+    lines.push(`*This is a gift for:* ${order.recipientName}${order.recipientPhone ? ` (${order.recipientPhone})` : ""}`);
+    if (order.giftMessage) lines.push(`*Gift message:* "${order.giftMessage}"`);
+  }
+  if (order.scheduledDate) {
+    lines.push(`*Requested for:* ${order.scheduledDate}${order.scheduledTime ? `, ${order.scheduledTime}` : ""}`);
+  }
   if (order.fulfillmentType === "delivery" && order.address) {
     lines.push(`*Delivery address:* ${order.address}`);
+    if (order.zoneName) lines.push(`*Delivery area:* ${order.zoneName}`);
+    if (order.landmark) lines.push(`*Landmark:* ${order.landmark}`);
   }
   lines.push("");
   lines.push("*Order summary*");

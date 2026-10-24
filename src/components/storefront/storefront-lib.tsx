@@ -144,6 +144,12 @@ export interface OrderErrorBody {
   error?: string;
   unavailable?: string[];
   orderingPaused?: boolean;
+  /* Checkout hardening (spec §6/§7/§9) */
+  locationUnconfirmed?: boolean;
+  outsideZones?: boolean;
+  quoteRequired?: boolean;
+  zone?: string;
+  zoneMinSubtotal?: number;
 }
 
 export function apiErrorStatus(err: unknown): number | null {

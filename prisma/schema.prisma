@@ -112,7 +112,22 @@ model Order {
   customerName    String
   customerPhone   String
   customerEmail   String?
+  customerId      String? // signed-in customer (optional, guest checkout supported)
+  customer        Customer?     @relation(fields: [customerId], references: [id], onDelete: SetNull)
   address         String?
+  addressLat      String? // order-time location snapshot
+  addressLng      String?
+  landmark        String?
+  locationConfirmed Boolean     @default(false) // customer explicitly confirmed the pin/address
+  deliveryZoneId  String?
+  deliveryZone    DeliveryZone? @relation(fields: [deliveryZoneId], references: [id], onDelete: SetNull)
+  scheduledDate   String? // YYYY-MM-DD requested delivery date
+  scheduledTime   String? // requested window label e.g. 11:00 – 12:00
+  // Gifting (spec §9) — purchaser is customer*, recipient is separate
+  recipientName   String?
+  recipientPhone  String?
+  giftMessage     String?
+  hidePrices      Boolean       @default(false)
   note            String?
   subtotal        Int // pesewas, server-calculated
   discount        Int           @default(0)
@@ -152,6 +167,88 @@ model OrderEvent {
   message   String
   actor     String   @default("system")
   createdAt DateTime @default(now())
+}
+
+// ---------- Delivery zones (spec §7) ----------
+
+model DeliveryZone {
+  id            String  @id @default(cuid())
+  name          String // e.g. Mampong-Akuapem, Accra
+  areas         String  @default("[]") // JSON string[] — matchable area/town names
+  fee           Int     @default(0) // pesewas
+  minSubtotal   Int     @default(0) // minimum order value for this zone
+  leadMinutes   Int     @default(60) // preparation + transit lead time
+  requiresQuote Boolean @default(false) // long-distance zones need manual quote/approval
+  note          String  @default("")
+  active        Boolean @default(true)
+  sortOrder     Int     @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  orders        Order[]
+}
+
+// ---------- Catering & service packages (spec §8) ----------
+
+// Quote lifecycle: pending -> reviewing -> quoted -> approved | rejected -> converted
+model CateringQuote {
+  id            String   @id @default(cuid())
+  reference     String   @unique // QT-XXXXXX
+  name          String
+  phone         String
+  email         String?
+  organization  String?
+  serviceType   String   @default("custom") // staff_meals|family_group|meetings|conference|party|canteen|recurring|custom
+  people        Int
+  mealsPerPerson Int     @default(1)
+  eventDate     String? // YYYY-MM-DD
+  eventTime     String?
+  venue         String?
+  items         String   @default("[]") // JSON [{label, qty, note}] requested menu
+  message       String?
+  status        String   @default("pending") // pending|reviewing|quoted|approved|rejected|converted
+  quotedTotal   Int? // pesewas — only after authorized approval
+  depositAmount Int?
+  adminNote     String?
+  handledBy     String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+// ---------- Customers (spec §16) ----------
+
+model Customer {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  phone        String   @default("")
+  passwordHash String
+  status       String   @default("active") // active|suspended
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  orders       Order[]
+  addresses    SavedAddress[]
+}
+
+model SavedAddress {
+  id         String   @id @default(cuid())
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  label      String
+  address    String
+  landmark   String?
+  lat        String?
+  lng        String?
+  zoneName   String?
+  createdAt  DateTime @default(now())
+}
+
+// ---------- Currency rates (spec §10) ----------
+
+model CurrencyRate {
+  code      String   @id // USD|GBP|EUR|NGN|CAD — target of GHS base
+  rate      Float // 1 GHS = rate <code>
+  provider  String
+  fetchedAt DateTime
 }
 
 // ---------- Payments (separate state machine) ----------
@@ -231,6 +328,8 @@ model Campaign {
   audience   String   @default("all")
   pageTarget String   @default("all")
   device     String   @default("all") // all|mobile|desktop
+  productId  String? // exact-meal linking (spec §13) — CTA opens this dish
+  mealTime   String   @default("any") // any|breakfast|lunch|supper — serving window targeting
   showOnce   Boolean  @default(true)
   impressions Int     @default(0)
   clicks     Int      @default(0)

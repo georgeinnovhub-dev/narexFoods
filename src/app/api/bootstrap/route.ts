@@ -3,12 +3,13 @@ import { getSettings, publicSettings } from "@/lib/settings";
 import { ok, safeErrorLog } from "@/lib/api";
 import type { BootstrapResponse } from "@/lib/types";
 import { safeParse } from "@/lib/serialize";
+import { parseZoneAreas } from "@/lib/zones";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    const [settings, categories, products, campaigns] = await Promise.all([
+    const [settings, categories, products, campaigns, zones] = await Promise.all([
       getSettings(),
       db.category.findMany({ orderBy: { sortOrder: "asc" } }),
       db.product.findMany({
@@ -25,6 +26,7 @@ export async function GET() {
         orderBy: { priority: "desc" },
         take: 3,
       }),
+      db.deliveryZone.findMany({ where: { active: true }, orderBy: { sortOrder: "asc" } }),
     ]);
 
     const response: BootstrapResponse = {
@@ -62,6 +64,18 @@ export async function GET() {
         ctaUrl: c.ctaUrl,
         placement: c.placement as "popup" | "banner",
         showOnce: c.showOnce,
+        productId: c.productId,
+        mealTime: (c.mealTime as "any" | "breakfast" | "lunch" | "supper") || "any",
+      })),
+      zones: zones.map((z) => ({
+        id: z.id,
+        name: z.name,
+        areas: parseZoneAreas(z.areas),
+        fee: z.fee,
+        minSubtotal: z.minSubtotal,
+        leadMinutes: z.leadMinutes,
+        requiresQuote: z.requiresQuote,
+        note: z.note,
       })),
       serverTime: new Date().toISOString(),
     };
@@ -73,6 +87,7 @@ export async function GET() {
       categories: [],
       products: [],
       campaigns: [],
+      zones: [],
       serverTime: new Date().toISOString(),
     });
   }

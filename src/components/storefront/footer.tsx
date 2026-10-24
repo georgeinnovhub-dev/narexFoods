@@ -38,13 +38,21 @@ export function SiteFooter({ className }: { className?: string }) {
 
   const hoursList = DAY_ORDER.map((day) => ({ day, value: hours[day] })).filter((h) => Boolean(h.value));
 
-  const quickLinks: { label: string; view: "home" | "menu" | "services" | "parlays" | "eatntour" | "track" }[] = [
+  const quickLinks: { label: string; view: "home" | "menu" | "services" | "parlays" | "eatntour" | "track" | "blog" }[] = [
     { label: "Home", view: "home" },
     { label: "Full Menu", view: "menu" },
     { label: "Services", view: "services" },
     { label: "Parlays & Hangouts", view: "parlays" },
     { label: "Eat & Tour", view: "eatntour" },
+    { label: "Food Journal", view: "blog" },
     { label: "Track Order", view: "track" },
+  ];
+
+  const legalLinks: { label: string; view: "privacy" | "terms" | "delivery-info" | "account" }[] = [
+    { label: "Delivery Info", view: "delivery-info" },
+    { label: "Privacy Policy", view: "privacy" },
+    { label: "Terms of Service", view: "terms" },
+    { label: "My Account", view: "account" },
   ];
 
   return (
@@ -70,6 +78,24 @@ export function SiteFooter({ className }: { className?: string }) {
           <h2 className="text-xs font-semibold uppercase tracking-widest text-gold">Quick Links</h2>
           <ul className="mt-4 space-y-2.5">
             {quickLinks.map((link) => (
+              <li key={link.view}>
+                <button
+                  type="button"
+                  onClick={() => navigate(link.view)}
+                  className="rounded text-sm text-cream/85 transition-colors hover:text-gold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+                >
+                  {link.label}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </nav>
+
+        {/* Customer care */}
+        <nav aria-label="Customer care">
+          <h2 className="text-xs font-semibold uppercase tracking-widest text-gold">Customer Care</h2>
+          <ul className="mt-4 space-y-2.5">
+            {legalLinks.map((link) => (
               <li key={link.view}>
                 <button
                   type="button"

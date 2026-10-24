@@ -11,19 +11,19 @@ async function main() {
   console.log("Seeding NAREX Foods…");
 
   // ---------- Roles ----------
-  const ALL = ["orders.manage","payments.review","payments.configure","menu.manage","dispatch.manage","staff.manage","content.manage","marketing.manage","reports.view","settings.manage","audit.view"];
+  const ALL = ["orders.manage","payments.review","payments.configure","menu.manage","dispatch.manage","staff.manage","content.manage","marketing.manage","reports.view","settings.manage","audit.view","catering.manage","zones.manage"];
   const roleDefs = [
     { name: "Superadmin", description: "Full platform control", permissions: ALL, isSystem: true },
-    { name: "Operations Manager", description: "Runs daily operations", permissions: ["orders.manage","menu.manage","dispatch.manage","reports.view","payments.review"], isSystem: false },
-    { name: "Order Manager", description: "Manages incoming orders", permissions: ["orders.manage","reports.view"], isSystem: false },
+    { name: "Operations Manager", description: "Runs daily operations", permissions: ["orders.manage","menu.manage","dispatch.manage","reports.view","payments.review","catering.manage","zones.manage"], isSystem: false },
+    { name: "Order Manager", description: "Manages incoming orders", permissions: ["orders.manage","reports.view","catering.manage"], isSystem: false },
     { name: "Cashier / Payment Reviewer", description: "Reviews payment evidence", permissions: ["orders.manage","payments.review","reports.view"], isSystem: false },
     { name: "Kitchen Staff", description: "Prepares orders", permissions: ["orders.manage"], isSystem: false },
-    { name: "Dispatch Manager", description: "Manages delivery operations", permissions: ["orders.manage","dispatch.manage","reports.view"], isSystem: false },
+    { name: "Dispatch Manager", description: "Manages delivery operations", permissions: ["orders.manage","dispatch.manage","reports.view","zones.manage"], isSystem: false },
     { name: "Dispatcher", description: "Delivers orders", permissions: [], isSystem: false },
     { name: "Content Editor", description: "Edits website content & blog", permissions: ["content.manage"], isSystem: false },
     { name: "Marketing Manager", description: "Campaigns and coupons", permissions: ["marketing.manage","content.manage","reports.view"], isSystem: false },
     { name: "Analyst", description: "Read-only analytics", permissions: ["reports.view"], isSystem: false },
-    { name: "Customer Support", description: "Helps customers", permissions: ["orders.manage"], isSystem: false },
+    { name: "Customer Support", description: "Helps customers", permissions: ["orders.manage","catering.manage"], isSystem: false },
   ];
   for (const r of roleDefs) {
     await db.role.upsert({
@@ -179,6 +179,20 @@ async function main() {
     },
     update: {},
   });
+
+  // ---------- Delivery zones (spec §7) ----------
+  const zones = [
+    { name: "Mampong-Akuapem", areas: ["Mampong", "Mampong-Akuapem", "Mamfe"], fee: 800, minSubtotal: 0, leadMinutes: 45, requiresQuote: false, sortOrder: 1, note: "Our home area — fastest delivery window." },
+    { name: "Akropong & Aburi", areas: ["Akropong", "Aburi", "Adawso", "Tinkong"], fee: 1500, minSubtotal: 0, leadMinutes: 75, requiresQuote: false, sortOrder: 2, note: "Ridge towns along the Akuapem range." },
+    { name: "Nsawam & Koforidua", areas: ["Nsawam", "Koforidua", "Adooso", "Zualko"], fee: 2500, minSubtotal: 5000, leadMinutes: 105, requiresQuote: false, sortOrder: 3, note: "Minimum order GH₵50 applies." },
+    { name: "Accra", areas: ["Accra", "Madina", "Adenta", "Tema", "Legon", "East Legon", "Achimota", "Circle", "Osu", "Spintex", "Teshie", "Haatso"], fee: 4500, minSubtotal: 10000, leadMinutes: 180, requiresQuote: true, sortOrder: 4, note: "Long-distance run — subject to scheduled runs and capacity. A quick manual confirmation is required before checkout." },
+  ];
+  for (const z of zones) {
+    const existing = await db.deliveryZone.findFirst({ where: { name: z.name } });
+    if (!existing) {
+      await db.deliveryZone.create({ data: { ...z, areas: JSON.stringify(z.areas) } });
+    }
+  }
 
   // ---------- Website content (home) ----------
   const homeData = {
