@@ -25,7 +25,11 @@ export function useBootstrapData() {
   }, [setBootstrap]);
 
   useEffect(() => {
-    if (!bootstrap) refresh();
+    if (bootstrap) return;
+    const id = window.setTimeout(() => {
+      void refresh();
+    }, 0);
+    return () => window.clearTimeout(id);
   }, [bootstrap, refresh]);
 
   return { bootstrap, loading, error, refresh };

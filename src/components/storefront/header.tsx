@@ -4,7 +4,6 @@ import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   ChevronDown,
-  LogIn,
   Menu as MenuIcon,
   ShoppingBag,
   UserRound,
@@ -184,16 +183,6 @@ export function SiteHeader() {
           )}
 
           <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate("admin")}
-            className="hidden h-10 gap-1.5 px-3 text-forest hover:bg-forest/10 hover:text-forest lg:inline-flex"
-          >
-            <LogIn className="size-4" aria-hidden="true" />
-            Staff Portal
-          </Button>
-
-          <Button
             variant="outline"
             size="icon"
             aria-label={`Open cart${count > 0 ? ` (${count} item${count === 1 ? "" : "s"})` : ""}`}
@@ -257,13 +246,6 @@ export function SiteHeader() {
                   className="rounded-xl px-4 py-3 text-left text-sm font-medium text-forest hover:bg-forest/10"
                 >
                   {customer ? "My Account" : "Sign in / Register"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => go("admin")}
-                  className="rounded-xl px-4 py-3 text-left text-sm font-medium text-forest hover:bg-forest/10"
-                >
-                  Staff Portal
                 </button>
               </nav>
             </SheetContent>

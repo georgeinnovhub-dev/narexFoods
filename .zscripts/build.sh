@@ -5,7 +5,7 @@ exec 2>&1
 
 set -e
 
-# 获取脚本所在目录（.zscripts 目录，即 workspace-agent/.zscripts）
+# 获取脚本所在目录（.zscripts 目录，即 project/.zscripts）
 # 使用 $0 获取脚本路径（兼容 sh 和 bash）
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
@@ -101,7 +101,7 @@ fi
 # 检查 Next.js 项目目录下是否有 mini-services 目录
 if [ -d "$NEXTJS_PROJECT_DIR/mini-services" ]; then
     echo "🔨 构建 mini-services..."
-    # 使用 workspace-agent 目录下的 mini-services 脚本
+    # 使用 project 目录下的 mini-services 脚本
     sh "$SCRIPT_DIR/mini-services-install.sh"
     sh "$SCRIPT_DIR/mini-services-build.sh"
 
@@ -135,7 +135,7 @@ if [ -d "public" ]; then
     cp -r public "$BUILD_DIR/next-service-dist/"
 fi
 
-# Python 不继承 workspace-agent 的 /home/z/.venv。若项目包含 Python 源码或
+# Python 不继承 project 的 /home/z/.venv。若项目包含 Python 源码或
 # 依赖清单，在构建期将生产依赖固化到产物，并保持 Python 源码的项目相对路径。
 PROJECT_DIR="$NEXTJS_PROJECT_DIR" BUILD_DIR="$BUILD_DIR" \
     bash "$SCRIPT_DIR/python-runtime-build.sh"
