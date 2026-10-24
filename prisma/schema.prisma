@@ -1,5 +1,5 @@
 // NAREX Foods — iDe8 Flow Hub
-// Authoritative data architecture (Prisma / SQLite)
+// Authoritative data architecture (Prisma / Postgres)
 // Money is stored as integer pesewas (GH₵1 = 100p) to avoid float errors.
 
 generator client {
@@ -7,7 +7,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
